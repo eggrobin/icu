@@ -240,7 +240,13 @@ $CAN_CM $CM*  $IS;
 ^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
 
 
-# LB 15
+# LB 15a
+($OP | $QU | $GL) $CM* [\p{Pi} & $QU] $CM* $SP* .
+^ [\p{Pi} & $QU] $CM* $SP* .
+
+# LB 15b
+$LB8NonBreaks [\p{Pf} & $QU] $CM* ( $SP | $GL | $WJ | $CL | $QU | $CP | $EX | $IS | $SY | $BK | $CR | $LF | $NL | {eot} )
+
 $QU $CM* $SP* $OP;
 
 # LB 16
