@@ -59,21 +59,23 @@ export UNICODE_DATA=~/unidata/uni15.1/snapshot
 export CLDR_SRC=~/cldr/uni/src
 export ICU_ROOT=~/icu/uni
 export ICU_SRC=$ICU_ROOT/src
+export ICU_OUT=$ICU_ROOT/dbg
 export ICUDT=icudt73b
 export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
 export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
-export LD_LIBRARY_PATH=$ICU_ROOT/dbg/icu4c/lib
+export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
 
 Elango:
 
 export UNICODE_DATA=~/oss/unidata/uni15.1/snapshot
-export CLDR_SRC=~/oss/cldr/uni/src
-export ICU_ROOT=~/oss/icu/uni
-export ICU_SRC=$ICU_ROOT/src
+export CLDR_SRC=~/oss/cldr/mine/src
+export ICU_ROOT=~/oss/icu
+export ICU_SRC=$ICU_ROOT
+export ICU_OUT=$ICU_ROOT
 export ICUDT=icudt73b
 export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
 export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
-export LD_LIBRARY_PATH=$ICU_ROOT/dbg/icu4c/lib
+export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
 
 
 *** Unicode version numbers
@@ -82,12 +84,10 @@ export LD_LIBRARY_PATH=$ICU_ROOT/dbg/icu4c/lib
 - com.ibm.icu.util.VersionInfo
 - com.ibm.icu.dev.test.lang.UCharacterTest.VERSION_
 
-TODO
-
 *** Configure: Build Unicode data for ICU4J
 - Run ICU4C "configure" _after_ updating the Unicode version number in uchar.h
     so that the makefiles see the new version number.
-  cd $ICU_ROOT/dbg/icu4c
+  cd $ICU_OUT/icu4c
   ICU_DATA_BUILDTOOL_OPTS=--include_uni_core_data ../../../doconfig-clang-dbg.sh
 
 *** data files & enums & parser code
@@ -110,9 +110,9 @@ TODO
   + use an FTP client; anonymous FTP from www.unicode.org at /Public/draft etc.
   + subfolders: emoji, idna, security, ucd, uca
   + whichever way you download the files:
-    ~ inside ucd: extract Unihan.zip to "here" (.../ucd/Unihan/*.txt), delete Unihan.zip
+    ~ inside ucd: extract Unihan.zip to "here" (.../UCD/ucd/Unihan/*.txt), delete Unihan.zip
     ~ split Unihan into single-property files
-      ~/unitools/mine/src$ py/splitunihan.py $UNICODE_DATA/ucd/Unihan
+      ~/unitools/mine/src$ py/splitunihan.py $UNICODE_DATA/UCD/ucd/Unihan
   + alternate way of fetching files, if available:
     copy the files from a Unicode Tools workspace that is up to date with
     https://github.com/unicode-org/unicodetools
@@ -135,7 +135,8 @@ TODO
   (remove this note next time)
 
 * process and/or copy files
-- $ICU_SRC/tools/unicode$ py/preparseucd.py $UNICODE_DATA $ICU_SRC
+- cd $ICU_SRC/tools/unicode
+  py/preparseucd.py $UNICODE_DATA $ICU_SRC
   + This writes files (especially ppucd.txt) to the ICU4C unidata and testdata subfolders.
   + For debugging, and tweaking how ppucd.txt is written,
     the tool has an --only_ppucd option:
@@ -145,32 +146,27 @@ TODO
 
 * new constants for new property values
 - preparseucd.py error:
-    ValueError: missing uchar.h enum constants for some property values: [('blk', {'Nag_Mundari', 'CJK_Ext_H', 'Kawi', 'Kaktovik_Numerals', 'Devanagari_Ext_A', 'Arabic_Ext_C', 'Cyrillic_Ext_D'}), ('sc', {'Nagm', 'Kawi'})]
+    ValueError: missing uchar.h enum constants for some property values: [('blk', {'CJK_Ext_I'}), ('lb', {'VF', 'VI', 'AS', 'AK', 'AP'})]
   = PropertyValueAliases.txt new property values (diff old & new .txt files)
-    ~/unidata$ diff -u uni14/20210922/ucd/PropertyValueAliases.txt uni15/beta/ucd/PropertyValueAliases.txt | egrep '^[-+][a-zA-Z]'
-    +age; 15.0                             ; V15_0
-    +blk; Arabic_Ext_C                     ; Arabic_Extended_C
-    +blk; CJK_Ext_H                        ; CJK_Unified_Ideographs_Extension_H
-    +blk; Cyrillic_Ext_D                   ; Cyrillic_Extended_D
-    +blk; Devanagari_Ext_A                 ; Devanagari_Extended_A
-    +blk; Kaktovik_Numerals                ; Kaktovik_Numerals
-    +blk; Kawi                             ; Kawi
-    +blk; Nag_Mundari                      ; Nag_Mundari
-    +sc ; Kawi                             ; Kawi
-    +sc ; Nagm                             ; Nag_Mundari
+    ~/unidata$ diff -u uni15.0/ucd/PropertyValueAliases.txt uni15.1/snapshot/UCD/ucd/PropertyValueAliases.txt | egrep '^[-+][a-zA-Z]'
+    +age; 15.1                             ; V15_1
+    +blk; CJK_Ext_I                        ; CJK_Unified_Ideographs_Extension_I
+    +IDSU; N                               ; No                               ; F                                ; False
+    +IDSU; Y                               ; Yes                              ; T                                ; True
+    +ID_Compat_Math_Continue; N            ; No                               ; F                                ; False
+    +ID_Compat_Math_Continue; Y            ; Yes                              ; T                                ; True
+    +ID_Compat_Math_Start; N               ; No                               ; F                                ; False
+    +ID_Compat_Math_Start; Y               ; Yes                              ; T                                ; True
+    +lb ; AK                               ; Aksara
+    +lb ; AP                               ; Aksara_Prebase
+    +lb ; AS                               ; Aksara_Start
+    +lb ; VF                               ; Virama_Final
+    +lb ; VI                               ; Virama
   -> add new blocks to uchar.h before UBLOCK_COUNT
     use long property names for enum constants,
     for the trailing comment get the block start code point: diff old & new Blocks.txt
-    ~/unidata$ diff -u uni14/20210922/ucd/Blocks.txt uni15/beta/ucd/Blocks.txt | egrep '^[-+][0-9A-Z]'
-    +10EC0..10EFF; Arabic Extended-C
-    +11B00..11B5F; Devanagari Extended-A
-    +11F00..11F5F; Kawi
-    -13430..1343F; Egyptian Hieroglyph Format Controls
-    +13430..1345F; Egyptian Hieroglyph Format Controls
-    +1D2C0..1D2DF; Kaktovik Numerals
-    +1E030..1E08F; Cyrillic Extended-D
-    +1E4D0..1E4FF; Nag Mundari
-    +31350..323AF; CJK Unified Ideographs Extension H
+    ~/unidata$ diff -u uni15.0/ucd/Blocks.txt uni15.1/snapshot/UCD/ucd/Blocks.txt | egrep '^[-+][0-9A-Z]'
+    +2EBF0..2EE4F; CJK Unified Ideographs Extension I
     (ignore blocks whose end code point changed)
   -> add new blocks to UCharacter.UnicodeBlock IDs
     Eclipse find     UBLOCK_([^ ]+) = ([0-9]+), (/.+)
@@ -178,11 +174,7 @@ TODO
   -> add new blocks to UCharacter.UnicodeBlock objects
     Eclipse find     UBLOCK_([^ ]+) = [0-9]+, (/.+)
             replace  public static final UnicodeBlock \1 = new UnicodeBlock("\1", \1_ID); \2
-  -> add new scripts to uscript.h & com.ibm.icu.lang.UScript
-    Eclipse find     USCRIPT_([^ ]+) *= ([0-9]+),(/.+)
-            replace  public static final int \1 = \2; \3
-  -> for new scripts: fix expectedLong names in cintltst/cucdapi.c/TestUScriptCodeAPI()
-      and in com.ibm.icu.dev.test.lang.TestUScript.java
+  -> add new line break values to uchar.h & UCharacter.LineBreak
 
 * update Script metadata: SCRIPT_PROPS[] in uscript_props.cpp & UScript.ScriptMetadata
     (not strictly necessary for NOT_ENCODED scripts)
@@ -191,7 +183,9 @@ TODO
 * build ICU
   to make sure that there are no syntax errors
 
-  $ICU_ROOT/dbg/icu4c$ echo;echo; date; make -j7 tests &> out.txt ; tail -n 30 out.txt ; date
+  $ICU_OUT/icu4c$ echo;echo; date; make -j7 tests &> out.txt ; tail -n 30 out.txt ; date
+
+TODO
 
 * update spoof checker UnicodeSet initializers:
     inclusionPat & recommendedPat in i18n/uspoof.cpp
@@ -317,7 +311,7 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
 - refresh just the UCD/UCA-related/derived files, just to be safe
 - see (ICU4C)/source/data/icu4j-readme.txt
 - mkdir -p /tmp/icu4j/com/ibm/icu/impl/data/$ICUDT
-- $ICU_ROOT/dbg/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
+- $ICU_OUT/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
     NOTE: If you get the error "No rule to make target 'out/build/icudt70l/uprops.icu'",
     you need to reconfigure with unicore data; see the "configure" line above.
   output:
@@ -337,7 +331,7 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
 - copy the big-endian Unicode data files to another location,
   separate from the other data files,
   and then refresh ICU4J
-    cd $ICU_ROOT/dbg/icu4c/data/out/icu4j
+    cd $ICU_OUT/icu4c/data/out/icu4j
     mkdir -p /tmp/icu4j/com/ibm/icu/impl/data/$ICUDT/coll
     mkdir -p /tmp/icu4j/com/ibm/icu/impl/data/$ICUDT/brkitr
     cp -v com/ibm/icu/impl/data/$ICUDT/confusables.cfu /tmp/icu4j/com/ibm/icu/impl/data/$ICUDT
@@ -351,10 +345,10 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
     cp -v com/ibm/icu/impl/data/$ICUDT/coll/* $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT/coll
 
 * When refreshing all of ICU4J data from ICU4C
-- $ICU_ROOT/dbg/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
+- $ICU_OUT/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
 - cp /tmp/icu4j/main/shared/data/icudata.jar $ICU_SRC/icu4j/main/shared/data
 or
-- $ICU_ROOT/dbg/icu4c$ make ICU4J_ROOT=$ICU_SRC/icu4j icu4j-data-install
+- $ICU_OUT/icu4c$ make ICU4J_ROOT=$ICU_SRC/icu4j icu4j-data-install
 
 * refresh Java test .txt files
 - copy new .txt files into ICU4J's main/tests/core/src/com/ibm/icu/dev/data/unicode
