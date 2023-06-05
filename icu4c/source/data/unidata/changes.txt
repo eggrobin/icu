@@ -53,6 +53,8 @@ https://github.com/unicode-org/unicodetools/issues/492 adjust cldr/*BreakTest ge
 
 * Command-line environment setup
 
+Markus:
+
 export UNICODE_DATA=~/unidata/uni15.1/snapshot
 export CLDR_SRC=~/cldr/uni/src
 export ICU_ROOT=~/icu/uni
@@ -62,13 +64,25 @@ export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
 export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
 export LD_LIBRARY_PATH=$ICU_ROOT/dbg/icu4c/lib
 
-TODO
+Elango:
+
+export UNICODE_DATA=~/oss/unidata/uni15.1/snapshot
+export CLDR_SRC=~/oss/cldr/uni/src
+export ICU_ROOT=~/oss/icu/uni
+export ICU_SRC=$ICU_ROOT/src
+export ICUDT=icudt73b
+export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
+export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
+export LD_LIBRARY_PATH=$ICU_ROOT/dbg/icu4c/lib
+
 
 *** Unicode version numbers
 - makedata.mak
 - uchar.h
 - com.ibm.icu.util.VersionInfo
 - com.ibm.icu.dev.test.lang.UCharacterTest.VERSION_
+
+TODO
 
 *** Configure: Build Unicode data for ICU4J
 - Run ICU4C "configure" _after_ updating the Unicode version number in uchar.h
