@@ -199,8 +199,6 @@ export UNICODE_TOOLS=~/oss/unicodetools/mine/src
 
   $ICU_OUT/icu4c$ echo;echo; date; make -j7 tests &> out.txt ; tail -n 30 out.txt ; date
 
-TODO
-
 * update spoof checker UnicodeSet initializers:
     inclusionPat & recommendedPat in i18n/uspoof.cpp
     INCLUSION & RECOMMENDED in SpoofChecker.java
@@ -211,6 +209,8 @@ TODO
   mvn -s ~/.m2/settings.xml compile exec:java -Dexec.mainClass="org.unicode.text.tools.RecommendedSetGenerator" \ 
       -Dexec.args="" -am -pl unicodetools  -DCLDR_DIR=$(cd ../../../cldr/mine/src ; pwd) -DUNICODETOOLS_REPO_DIR=$(pwd)
 - copy & paste from the Console output into the .cpp & .java files
+
+TODO
 
 * Bazel build process
 
