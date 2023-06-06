@@ -136,7 +136,7 @@ export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
     CLDR used modified grapheme break rules.
   cp $CLDR_SRC/common/properties/segments/GraphemeBreakTest.txt icu4c/source/test/testdata
     or
-  cp ~/unitools/mine/Generated/UCD/15.0.0/cldr/GraphemeBreakTest-cldr.txt icu4c/source/test/testdata/GraphemeBreakTest.txt
+  cp ~/unitools/mine/Generated/UCD/15.1.0/cldr/GraphemeBreakTest-cldr.txt icu4c/source/test/testdata/GraphemeBreakTest.txt
   + TODO: figure out whether we need a CLDR version of LineBreakTest.txt:
     unicodetools issue #492
 
