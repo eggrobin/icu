@@ -28,6 +28,15 @@ from near the top of the current section before pasting tool command lines.
 Adjust the environment variables to the current version and your machine setup.
 (The command lines are currently as used on Linux.)
 
+Syntax of this file:
+
+`***` - section heading
+`*` - sub heading
+`-` - 1st level bullet
+`+` - 2nd level bullet
+`=` - 1st level bullet
+`->` - "the previous things leads to...", OR a 2nd level bullet/item
+
 ---------------------------------------------------------------------------- ***
 
 * New ISO 15924 script codes
