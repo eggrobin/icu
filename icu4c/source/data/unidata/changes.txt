@@ -74,6 +74,7 @@ export ICUDT=icudt73b
 export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
 export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
 export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
+export UNICODE_TOOLS=~/unitools/mine/src
 
 Elango:
 
@@ -87,7 +88,7 @@ export ICUDT=icudt73b
 export ICU4C_DATA_IN=$ICU_SRC/icu4c/source/data/in
 export ICU4C_UNIDATA=$ICU_SRC/icu4c/source/data/unidata
 export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
-
+export UNICODE_TOOLS=~/oss/unicodetools/mine/src
 
 *** Unicode version numbers
 - makedata.mak
@@ -206,6 +207,9 @@ TODO
 - make sure that the Unicode Tools tree contains the latest security data files
 - go to Unicode Tools org.unicode.text.tools.RecommendedSetGenerator
 - run the tool (no special environment variables needed)
+  cd $UNICODE_TOOLS
+  mvn -s ~/.m2/settings.xml compile exec:java -Dexec.mainClass="org.unicode.text.tools.RecommendedSetGenerator" \ 
+      -Dexec.args="" -am -pl unicodetools  -DCLDR_DIR=$(cd ../../../cldr/mine/src ; pwd) -DUNICODETOOLS_REPO_DIR=$(pwd)
 - copy & paste from the Console output into the .cpp & .java files
 
 * Bazel build process
