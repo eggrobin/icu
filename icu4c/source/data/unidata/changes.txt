@@ -55,7 +55,8 @@ https://github.com/unicode-org/unicodetools/issues/492 adjust cldr/*BreakTest ge
 
 Markus:
 
-export UNICODE_DATA=~/unidata/uni15.1/snapshot
+export UNIDATA_ROOT=~/unidata
+export UNICODE_DATA=$UNIDATA_ROOT/uni15.1/snapshot
 export CLDR_SRC=~/cldr/uni/src
 export ICU_ROOT=~/icu/uni
 export ICU_SRC=$ICU_ROOT/src
@@ -67,7 +68,8 @@ export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
 
 Elango:
 
-export UNICODE_DATA=~/oss/unidata/uni15.1/snapshot
+export UNIDATA_ROOT=~/oss/unidata
+export UNICODE_DATA=$UNIDATA_ROOT/uni15.1/snapshot
 export CLDR_SRC=~/oss/cldr/mine/src
 export ICU_ROOT=~/oss/icu
 export ICU_SRC=$ICU_ROOT
@@ -148,7 +150,8 @@ export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
 - preparseucd.py error:
     ValueError: missing uchar.h enum constants for some property values: [('blk', {'CJK_Ext_I'}), ('lb', {'VF', 'VI', 'AS', 'AK', 'AP'})]
   = PropertyValueAliases.txt new property values (diff old & new .txt files)
-    ~/unidata$ diff -u uni15.0/ucd/PropertyValueAliases.txt uni15.1/snapshot/UCD/ucd/PropertyValueAliases.txt | egrep '^[-+][a-zA-Z]'
+    cd $UNIDATA_ROOT
+    $ diff -u uni15.0/ucd/PropertyValueAliases.txt uni15.1/snapshot/UCD/ucd/PropertyValueAliases.txt | egrep '^[-+][a-zA-Z]'
     +age; 15.1                             ; V15_1
     +blk; CJK_Ext_I                        ; CJK_Unified_Ideographs_Extension_I
     +IDSU; N                               ; No                               ; F                                ; False
@@ -165,7 +168,8 @@ export LD_LIBRARY_PATH=$ICU_OUT/icu4c/lib
   -> add new blocks to uchar.h before UBLOCK_COUNT
     use long property names for enum constants,
     for the trailing comment get the block start code point: diff old & new Blocks.txt
-    ~/unidata$ diff -u uni15.0/ucd/Blocks.txt uni15.1/snapshot/UCD/ucd/Blocks.txt | egrep '^[-+][0-9A-Z]'
+    cd $UNIDATA_ROOT
+    $ diff -u uni15.0/ucd/Blocks.txt uni15.1/snapshot/UCD/ucd/Blocks.txt | egrep '^[-+][0-9A-Z]'
     +2EBF0..2EE4F; CJK Unified Ideographs Extension I
     (ignore blocks whose end code point changed)
   -> add new blocks to UCharacter.UnicodeBlock IDs
