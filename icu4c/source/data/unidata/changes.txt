@@ -297,9 +297,9 @@ TODO
         (didn't work without setting JAVA_HOME,
          nor with the Google default of /usr/local/buildtools/java/jdk
          [Google security limitations in the XML parser])
-    export TOOLS_ROOT=~/icu/uni/src/tools
-    export CLDR_DIR=~/cldr/uni/src
-    export CLDR_DATA_DIR=~/cldr/uni/src
+    export TOOLS_ROOT=$ICU_SRC/tools
+    export CLDR_DIR=$CLDR_SRC
+    export CLDR_DATA_DIR=$CLDR_DIR
         (pointing to the "raw" data, not cldr-staging/.../production should be ok for the relevant files)
     cd "$TOOLS_ROOT/cldr/lib"
     ./install-cldr-jars.sh "$CLDR_DIR"
