@@ -239,8 +239,6 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
   and special test code from uts46test.cpp & UTS46Test.java.
   (remove this section next time)
 
-TODO
-
 * run & fix ICU4C tests
 - Note: Some of the collation data and test data will be updated below,
   so at this time we might get some collation test failures.
@@ -322,6 +320,8 @@ TODO
 - note on intltest: if collate/UCAConformanceTest fails, then
   utility/MultithreadTest/TestCollators will fail as well;
   fix the conformance test before looking into the multi-thread test
+
+TODO
 
 * update Java data files
 - refresh just the UCD/UCA-related/derived files, just to be safe
