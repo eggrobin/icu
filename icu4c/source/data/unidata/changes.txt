@@ -321,8 +321,6 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
   utility/MultithreadTest/TestCollators will fail as well;
   fix the conformance test before looking into the multi-thread test
 
-TODO
-
 * update Java data files
 - refresh just the UCD/UCA-related/derived files, just to be safe
 - see (ICU4C)/source/data/icu4j-readme.txt
@@ -332,7 +330,7 @@ TODO
     you need to reconfigure with unicore data; see the "configure" line above.
   output:
     ...
-    make[1]: Entering directory '/usr/local/google/home/mscherer/icu/uni/dbg/icu4c/data'
+    make[1]: Entering directory '/usr/local/google/home/elango/oss/icu/icu4c/data'
     mkdir -p ./out/icu4j/com/ibm/icu/impl/data/icudt73b
     mkdir -p ./out/icu4j/tzdata/com/ibm/icu/impl/data/icudt73b
     LD_LIBRARY_PATH=../lib:../stubdata:../tools/ctestfw:$LD_LIBRARY_PATH  ../bin/icupkg ./out/tmp/icudt73l.dat ./out/icu4j/icudt73b.dat -s ./out/build/icudt73l -x '*' -tb -d ./out/icu4j/com/ibm/icu/impl/data/icudt73b
@@ -343,7 +341,7 @@ TODO
     jar cf ./out/icu4j/icutzdata.jar -C ./out/icu4j/tzdata com/ibm/icu/impl/data/icudt73b/
     mkdir -p /tmp/icu4j/main/shared/data
     cp ./out/icu4j/icutzdata.jar /tmp/icu4j/main/shared/data
-    make[1]: Leaving directory '/usr/local/google/home/mscherer/icu/uni/dbg/icu4c/data'
+    make[1]: Leaving directory '/usr/local/google/home/elango/oss/icu/icu4c/data'
 - copy the big-endian Unicode data files to another location,
   separate from the other data files,
   and then refresh ICU4J
@@ -372,7 +370,9 @@ or
     cp -v confusables.txt confusablesWholeScript.txt NormalizationCorrections.txt NormalizationTest.txt SpecialCasing.txt UnicodeData.txt $ICU_SRC/icu4j/main/tests/core/src/com/ibm/icu/dev/data/unicode
     cd ../../test/testdata
     cp -v BidiCharacterTest.txt BidiTest.txt IdnaTestV2.txt $ICU_SRC/icu4j/main/tests/core/src/com/ibm/icu/dev/data/unicode
-    cp -v $UNICODE_DATA/ucd/CompositionExclusions.txt $ICU_SRC/icu4j/main/tests/core/src/com/ibm/icu/dev/data/unicode
+    cp -v $UNICODE_DATA/UCD/ucd/CompositionExclusions.txt $ICU_SRC/icu4j/main/tests/core/src/com/ibm/icu/dev/data/unicode
+
+TODO
 
 * run & fix ICU4J tests
 
