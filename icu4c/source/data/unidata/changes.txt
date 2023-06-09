@@ -357,12 +357,18 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
     jar uvf $ICU_SRC/icu4j/main/shared/data/icudata.jar -C /tmp/icu4j com/ibm/icu/impl/data/$ICUDT
 - new since ICU 73: also copy the binary data files directly into the ICU4J tree
     cp -v com/ibm/icu/impl/data/$ICUDT/coll/* $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT/coll
-
-* When refreshing all of ICU4J data from ICU4C
-- $ICU_OUT/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
-- cp /tmp/icu4j/main/shared/data/icudata.jar $ICU_SRC/icu4j/main/shared/data
-or
-- $ICU_OUT/icu4c$ make ICU4J_ROOT=$ICU_SRC/icu4j icu4j-data-install
+- The procedure above is very conservative:
+  It refreshes only the parts of icudata.jar that we think are affected by a Unicode data update.
+  It avoids dealing with any other discrepancies
+  between the source and generated data files.
+  *If* instead we wanted to refresh *all* of the ICU4J data from ICU4C:
+  + still via /tmp:
+    ~ $ICU_OUT/icu4c$ make ICU4J_ROOT=/tmp/icu4j icu4j-data-install
+    ~ cp /tmp/icu4j/main/shared/data/icudata.jar $ICU_SRC/icu4j/main/shared/data
+  + or directly:
+    ~ $ICU_OUT/icu4c$ make ICU4J_ROOT=$ICU_SRC/icu4j icu4j-data-install
+  + plus (new since ICU 73) also copy the binary data files directly into the ICU4J tree
+    ~ TODO
 
 * refresh Java test .txt files
 - copy new .txt files into ICU4J's main/tests/core/src/com/ibm/icu/dev/data/unicode
