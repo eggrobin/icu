@@ -279,7 +279,8 @@ public class CollationTest extends TestFmwk {
 
         // Implicit primary weights should be assigned for the following sets,
         // and sort in ascending order by set and then code point.
-        // See http://www.unicode.org/reports/tr10/#Implicit_Weights
+        // See https://www.unicode.org/reports/tr10/#Implicit_Weights
+
         // core Han Unified Ideographs
         UnicodeSet coreHan = new UnicodeSet("[\\p{unified_ideograph}&"
                                  + "[\\p{Block=CJK_Unified_Ideographs}"
