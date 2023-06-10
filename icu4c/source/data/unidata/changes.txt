@@ -357,6 +357,11 @@ copying that version number into the $ICU_SRC/.bazeliskrc config file.
     jar uvf $ICU_SRC/icu4j/main/shared/data/icudata.jar -C /tmp/icu4j com/ibm/icu/impl/data/$ICUDT
 - new since ICU 73: also copy the binary data files directly into the ICU4J tree
     cp -v com/ibm/icu/impl/data/$ICUDT/coll/* $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT/coll
+    cp -v com/ibm/icu/impl/data/$ICUDT/brkitr/* $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT/brkitr
+    cp -v com/ibm/icu/impl/data/$ICUDT/confusables.cfu $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT
+    cp -v com/ibm/icu/impl/data/$ICUDT/*.nrm $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT
+    cd com/ibm/icu/impl/data/$ICUDT/
+    ls *.icu | egrep -v "cnvalias.icu" | awk '{print "cp " $0 " $ICU_SRC/icu4j/maven-build/maven-icu4j-datafiles/src/main/resources/com/ibm/icu/impl/data/$ICUDT";}' | sh
 - The procedure above is very conservative:
   It refreshes only the parts of icudata.jar that we think are affected by a Unicode data update.
   It avoids dealing with any other discrepancies
