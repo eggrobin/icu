@@ -241,13 +241,14 @@ $CAN_CM $CM*  $IS;
 
 
 # LB 15a
-($OP | $QU | $GL) $CM* [\p{Pi} & $QU] $CM* $SP* .
-^ [\p{Pi} & $QU] $CM* $SP* .
+($OP | $QU | $GL) $CM* [\p{Pi} & $QU] $CM* $SP* .;
+($OP | $QU | $GL) $CM* [\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
+^[\p{Pi} & $QU] $CM* $SP* .;
+^[\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
 
 # LB 15b
-$LB8NonBreaks [\p{Pf} & $QU] $CM* ( $SP | $GL | $WJ | $CL | $QU | $CP | $EX | $IS | $SY | $BK | $CR | $LF | $NL | {eot} )
-
-$QU $CM* $SP* $OP;
+$LB8NonBreaks [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL {eof}];
+$CM  [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL {eof}];
 
 # LB 16
 ($CL | $CP) $CM* $SP* $NS;
@@ -350,7 +351,7 @@ $PR $CM* ($JL | $JV | $JT | $H2 | $H3);
 ^$CM+ ($ALPlus | $HL);      # The $CM+ is from rule 10, an unattached CM is treated as AL
 
 #LB 28b  Do not break Orthographic syllables
-($AP $CM*)? ($AS | $AK | "◌" ) ($CM* $VI $CM* ($AK | "◌" ))* ($CM* $VI | (($CM* ($AS | $AK | "◌" ) )? $CM* $VF))?;
+($AP $CM*)? ($AS | $AK | [◌] ) ($CM* $VI $CM* ($AK | [◌] ))* ($CM* $VI | (($CM* ($AS | $AK | [◌] ) )? $CM* $VF))?;
 
 # LB 29
 $IS $CM* ($ALPlus | $HL);
