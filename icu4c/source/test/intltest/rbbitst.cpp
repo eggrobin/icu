@@ -15,6 +15,7 @@
 #if !UCONFIG_NO_BREAK_ITERATION
 
 #include <algorithm>
+#include <set>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1453,21 +1454,29 @@ void RBBITest::checkUnicodeTestCase(const char *testFileName, int lineNumber,
     pos = bi->first();
     pos = bi->next();
 
+    bool error = false;
+    std::set<int> actualBreaks;
+    std::set<int> expectedBreaks;
     while (pos != BreakIterator::DONE) {
+        actualBreaks.insert(pos);
         if (expectedI >= breakPositions->size()) {
             errln("Test file \"%s\", line %d, unexpected break found at position %d",
                 testFileName, lineNumber, pos);
+            error = true;
             break;
         }
         expectedPos = breakPositions->elementAti(expectedI);
+        expectedBreaks.insert(expectedPos);
         if (pos < expectedPos) {
-            errln("Test file \"%s\", line %d, unexpected break found at position %d",
-                testFileName, lineNumber, pos);
+            errln("Test file \"%s\", line %d, unexpected break found at position %d", testFileName,
+                  lineNumber, pos);
+            error = true;
             break;
         }
         if (pos > expectedPos) {
             errln("Test file \"%s\", line %d, failed to find expected break at position %d",
-                testFileName, lineNumber, expectedPos);
+                  testFileName, lineNumber, expectedPos);
+            error = true;
             break;
         }
         pos = bi->next();
@@ -1475,8 +1484,35 @@ void RBBITest::checkUnicodeTestCase(const char *testFileName, int lineNumber,
     }
 
     if (pos==BreakIterator::DONE && expectedI<breakPositions->size()) {
-        errln("Test file \"%s\", line %d, failed to find expected break at position %d",
-            testFileName, lineNumber, breakPositions->elementAti(expectedI));
+        errln("Test file \"%s\", line %d, failed to find expected break at position %d", testFileName,
+              lineNumber, breakPositions->elementAti(expectedI));
+        error = true;
+    }
+
+    if (error) {
+        for (; pos != BreakIterator::DONE; pos = bi->next()) {
+            actualBreaks.insert(pos);
+        }
+        for (; expectedI < breakPositions->size(); ++expectedI) {
+            expectedBreaks.insert(breakPositions->elementAti(expectedI));
+        }
+        UnicodeString expected;
+        UnicodeString actual;
+        int codePointIndex = 0;
+        for (int i = 0; i < testString.length(); ++i, ++codePointIndex) {
+            const UChar32 c = testString.char32At(i);
+            if (c > 0xFFFF) {
+              ++i;
+            }
+            expected += expectedBreaks.count(i) == 1 ? "÷" : "×";
+            actual += actualBreaks.count(i) == 1 ? "÷" : "×";
+            expected += c;
+            actual += c;
+        }
+        expected += expectedBreaks.count(testString.length()) == 1 ? "÷" : "×";
+        actual += actualBreaks.count(testString.length()) == 1 ? "÷" : "×";
+        errln("Expected : " + expected);
+        errln("Actual   : " + actual);
     }
 }
 
