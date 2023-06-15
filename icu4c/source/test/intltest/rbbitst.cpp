@@ -2770,11 +2770,11 @@ RBBILineMonkey::RBBILineMonkey() :
     fCP30  = new UnicodeSet(u"[\\p{Line_break=CP}-[\\p{ea=F}\\p{ea=W}\\p{ea=H}]]", status);
     fExtPictUnassigned = new UnicodeSet(u"[\\p{Extended_Pictographic}&\\p{Cn}]", status);
 
-    fAK = new UnicodeSet(uR"([\p{Line_Break=AK])", status);
-    fAP = new UnicodeSet(uR"([\p{Line_Break=AP])", status);
-    fAS = new UnicodeSet(uR"([\p{Line_Break=AS])", status);
-    fVF = new UnicodeSet(uR"([\p{Line_Break=VF])", status);
-    fVI = new UnicodeSet(uR"([\p{Line_Break=VI])", status);
+    fAK = new UnicodeSet(uR"([\p{Line_Break=AK}])", status);
+    fAP = new UnicodeSet(uR"([\p{Line_Break=AP}])", status);
+    fAS = new UnicodeSet(uR"([\p{Line_Break=AS}])", status);
+    fVF = new UnicodeSet(uR"([\p{Line_Break=VF}])", status);
+    fVI = new UnicodeSet(uR"([\p{Line_Break=VI}])", status);
 
     fPi = new UnicodeSet(uR"([\p{Pi}])", status);
     fPf = new UnicodeSet(uR"([\p{Pf}])", status);
