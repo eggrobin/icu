@@ -2698,6 +2698,8 @@ private:
     UnicodeSet  *fAS;
     UnicodeSet  *fVF;
     UnicodeSet  *fVI;
+    UnicodeSet  *fPi;
+    UnicodeSet  *fPf;
 
     BreakIterator        *fCharBI;
     const UnicodeString  *fText;
@@ -2774,6 +2776,9 @@ RBBILineMonkey::RBBILineMonkey() :
     fVF = new UnicodeSet(uR"([\p{Line_Break=VF])", status);
     fVI = new UnicodeSet(uR"([\p{Line_Break=VI])", status);
 
+    fPi = new UnicodeSet(uR"([\p{Pi}])", status);
+    fPf = new UnicodeSet(uR"([\p{Pf}])", status);
+
     if (U_FAILURE(status)) {
         deferredStatus = status;
         return;
@@ -2787,12 +2792,6 @@ RBBILineMonkey::RBBILineMonkey() :
     fCM->addAll(*fZWJ);    // ZWJ behaves as a CM.
 
     fHH->add(u'\u2010');   // Hyphen, '‐'
-
-    fAL->removeAll(*fAK);
-    fAL->removeAll(*fAP);
-    fAL->removeAll(*fAS);
-    fCM->removeAll(*fVF);
-    fCM->removeAll(*fVI);
 
     // Sets and names.
     fSets->addElement(fBK, status); classNames.push_back("fBK");
@@ -2846,10 +2845,7 @@ RBBILineMonkey::RBBILineMonkey() :
     fSets->addElement(fVI, status); classNames.push_back("fVI");
 
 
-    // Hack for orthographic syllable prototype, to adjust CM property for use in numeric regexp.
-    //    Note that 200d adjustment is permanent.
-
-    UnicodeString CMx {u"[[[\\p{Line_Break=CM}]\\u200d]-[\\u1BF2-\\u1BF3\\u1B44\\uA9C0\\U00011046\\U0001134D\\U000113D0\\U00011F42]]"};
+    UnicodeString CMx {uR"([[\p{Line_Break=CM}]\u200d])"};
     UnicodeString rules;
     rules = rules + u"((\\p{Line_Break=PR}|\\p{Line_Break=PO})(" + CMx + u")*)?"
                   + u"((\\p{Line_Break=OP}|\\p{Line_Break=HY})(" + CMx + u")*)?"
@@ -3166,23 +3162,52 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
           if (fIS->contains(thisChar)) {
               setAppliedRule(pos, "LB 14b  Do not break before numeric separators, even after spaces.");
               continue;
-        }
+          }
 
+          // Same as LB 14, scan backward for
+          // (sot | BK | CR | LF | NL | OP CM*| QU CM* | GL CM* | SP) [\p{Pi}&QU] CM* SP*.
+          tPos = prevPos;
+          // SP* (with the aforementioned Twist).
+          if (fSP->contains(prevChar)) {
+              while (tPos > 0 && fSP->contains(fText->char32At(tPos))) {
+                tPos = fText->moveIndex32(tPos, -1);
+              }
+          }
+          // CM*.
+          while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
+              tPos = fText->moveIndex32(tPos, -1);
+          }
+          // [\p{Pi}&QU].
+          if (tPos > 0 && fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
+              tPos = fText->moveIndex32(tPos, -1);
+          }
+          if (tPos == 0 || fBK->contains(fText->char32At(tPos)) ||
+              fCR->contains(fText->char32At(tPos)) || fLF->contains(fText->char32At(tPos)) ||
+              fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos))) {
+              setAppliedRule(pos, "(sot | BK | CR | LF | NL | OP | QU | GL | SP) [\\p{Pi}&QU] SP* ×");
+              continue;
+          }
+          // CM*.
+          while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
+              tPos = fText->moveIndex32(tPos, -1);
+          }
+          if (tPos > 0 || fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
+              fGL->contains(fText->char32At(tPos))) {
+              setAppliedRule(pos, "(sot | BK | CR | LF | NL | OP | QU | GL | SP) [\\p{Pi}&QU] SP* ×");
+              continue;
+          }
 
-        if (fOP->contains(thisChar)) {
-            // Scan backwards from prevChar to see if it is preceded by QU CM* SP*
-            int tPos = prevPos;
-            while (tPos>0 && fSP->contains(fText->char32At(tPos))) {
-                tPos = fText->moveIndex32(tPos, -1);
-            }
-            while (tPos>0 && fCM->contains(fText->char32At(tPos))) {
-                tPos = fText->moveIndex32(tPos, -1);
-            }
-            if (fQU->contains(fText->char32At(tPos))) {
-                setAppliedRule(pos, "LB 15    QU SP* x OP");
-                continue;
-            }
-        }
+          if (fPf->contains(thisChar) && fQU->contains(thisChar)) {
+              UChar32 nextChar = fText->char32At(nextPos);
+              if (nextPos == fText->length() || fSP->contains(nextChar) || fGL->contains(nextChar) ||
+                  fWJ->contains(nextChar) || fCL->contains(nextChar) || fQU->contains(nextChar) ||
+                  fCP->contains(nextChar) || fEX->contains(nextChar) || fIS->contains(nextChar) ||
+                  fSY->contains(nextChar) || fBK->contains(nextChar) || fCR->contains(nextChar) ||
+                  fLF->contains(nextChar) || fNL->contains(nextChar)) {
+                setAppliedRule(pos, "LB 15b × [\\p{Pf}&QU] ( SP | GL | WJ | CL | QU | CP | EX | IS | SY "
+                                    "| BK | CR | LF | NL | eot)");
+              }
+          }
 
 
         //    Scan backwards for SP* CM* (CL | CP)
@@ -3345,7 +3370,6 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
         }
 
 
-
         if ((fAL->contains(prevChar) || fHL->contains(prevChar)) && (fAL->contains(thisChar) || fHL->contains(thisChar))) {
             setAppliedRule(pos, "LB 28  Do not break between alphabetics (\"at\").");
             continue;
@@ -3490,6 +3514,8 @@ RBBILineMonkey::~RBBILineMonkey() {
     delete fAS;
     delete fVF;
     delete fVI;
+    delete fPi;
+    delete fPf;
 
     delete fCharBI;
     delete fNumberMatcher;
