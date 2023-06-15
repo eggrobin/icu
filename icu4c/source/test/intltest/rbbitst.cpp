@@ -2768,15 +2768,11 @@ RBBILineMonkey::RBBILineMonkey() :
     fCP30  = new UnicodeSet(u"[\\p{Line_break=CP}-[\\p{ea=F}\\p{ea=W}\\p{ea=H}]]", status);
     fExtPictUnassigned = new UnicodeSet(u"[\\p{Extended_Pictographic}&\\p{Cn}]", status);
 
-    fAK    = new UnicodeSet(
-        u"[\u1B05-\u1B33\u1B45-\u1B4C\u25CC\uA984-\uA9B2\U00011005-\U00011037\U00011071-\U00011072\U00011075\U00011305-\U0001130C\U0001130F-\U00011310\U00011313-\U00011328\U0001132A-\U00011330\U00011332-\U00011333\U00011335-\U00011339\U00011360-\U00011361\U00011392-\U000113B5\U00011F04-\U00011F10\U00011F12-\U00011F33]",
-        status);
-    fAP    = new UnicodeSet(u"[\U00011003-\U00011004\U000113D1\U00011F02]", status);
-    fAS    = new UnicodeSet(
-        u"[\u1BC0-\u1BE5\uAA00-\uAA28\U00011066-\U0001106F\U00011350\U0001135E-\U0001135F\U00011380-\U00011389\U0001138B\U0001138E\U00011390-\U00011391\U00011EE0-\U00011EF1\U00011F50-\U00011F59]",
-        status);
-    fVF = new UnicodeSet(u"[\u1BF2-\u1BF3]", status);
-    fVI = new UnicodeSet(u"[\u1B44\uA9C0\U00011046\U0001134D\U000113D0\U00011F42]", status);
+    fAK = new UnicodeSet(uR"([\p{Line_Break=AK])", status);
+    fAP = new UnicodeSet(uR"([\p{Line_Break=AP])", status);
+    fAS = new UnicodeSet(uR"([\p{Line_Break=AS])", status);
+    fVF = new UnicodeSet(uR"([\p{Line_Break=VF])", status);
+    fVI = new UnicodeSet(uR"([\p{Line_Break=VI])", status);
 
     if (U_FAILURE(status)) {
         deferredStatus = status;
@@ -3158,7 +3154,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
 
         if (nextPos < fText->length()) {
             // note: UnicodeString::char32At(length) returns ffff, not distinguishable
-            //       from a legit ffff character. So test length separately.
+            //       from a legit ffff noncharacter. So test length separately.
             UChar32 nextChar = fText->char32At(nextPos);
             if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
                 setAppliedRule(pos, "LB 14a Break before an IS that begins a number and follows a space");
@@ -3355,30 +3351,33 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
             continue;
         }
 
-        if (fAP->contains(prevChar) && (fAK->contains(thisChar) || fAS->contains(thisChar))) {
-            setAppliedRule(pos, "LB 28b.1  AP x (AK | AS)");
+        if (fAP->contains(prevChar) &&
+            (fAK->contains(thisChar) || prevChar == U'◌' || fAS->contains(thisChar))) {
+            setAppliedRule(pos, "LB 28b.1  AP x (AK | ◌ | AS)");
             continue;
         }
 
-        if ((fAK->contains(prevChar) || fAS->contains(prevChar)) &&
+        if ((fAK->contains(prevChar) || prevChar == U'◌' || fAS->contains(prevChar)) &&
             (fVF->contains(thisChar) || fVI->contains(thisChar))) {
-            setAppliedRule(pos, "LB 28b.2  (AK | AS) x (VF | VI)");
+            setAppliedRule(pos, "LB 28b.2  (AK | ◌ | AS) x (VF | VI)");
             continue;
         }
 
-        if ((fAK->contains(prevCharX2) || fAS->contains(prevCharX2)) &&
-            fVI->contains(prevChar) && fAK->contains(thisChar)) {
-            setAppliedRule(pos, "LB 28b.3  (AK | AS) VI x AK");
+        if ((fAK->contains(prevCharX2) || prevCharX2 == U'◌' || fAS->contains(prevCharX2)) &&
+            fVI->contains(prevChar) &&
+            (fAK->contains(thisChar) || thisChar == U'◌')) {
+            setAppliedRule(pos, "LB 28b.3  (AK | ◌ | AS) VI x (AK | ◌)");
             continue;
         }
 
         if (nextPos < fText->length()) {
             // note: UnicodeString::char32At(length) returns ffff, not distinguishable
-            //       from a legit ffff character. So test length separately.
+            //       from a legit ffff noncharacter. So test length separately.
             UChar32 nextChar = fText->char32At(nextPos);
-            if ((fAK->contains(prevChar) || fAS->contains(prevChar)) &&
-                (fAK->contains(thisChar) || fAS->contains(thisChar)) && fVF->contains(nextChar)) {
-                setAppliedRule(pos, "LB 28b.4  (AK | AS) x (AK | AS) VF");
+            if ((fAK->contains(prevChar) || prevChar == U'◌' || fAS->contains(prevChar)) &&
+                (fAK->contains(thisChar) || thisChar == U'◌' || fAS->contains(thisChar)) &&
+                fVF->contains(nextChar)) {
+                setAppliedRule(pos, "LB 28b.4  (AK | ◌ | AS) x (AK | ◌ | AS) VF");
                 continue;
             }
         }
