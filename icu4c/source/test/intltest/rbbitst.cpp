@@ -3379,7 +3379,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
         }
 
         if (fAP->contains(prevChar) &&
-            (fAK->contains(thisChar) || prevChar == U'◌' || fAS->contains(thisChar))) {
+            (fAK->contains(thisChar) || thisChar == U'◌' || fAS->contains(thisChar))) {
             setAppliedRule(pos, "LB 28b.1  AP x (AK | ◌ | AS)");
             continue;
         }
