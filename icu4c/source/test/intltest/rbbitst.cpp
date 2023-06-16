@@ -3182,8 +3182,9 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
               tPos = fText->moveIndex32(tPos, -1);
               if (tPos == 0 || fBK->contains(fText->char32At(tPos)) ||
                   fCR->contains(fText->char32At(tPos)) || fLF->contains(fText->char32At(tPos)) ||
-                  fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos))) {
-                setAppliedRule(pos, "LB 15a (sot | BK | CR | LF | NL | SP) [\\p{Pi}&QU] SP* ×");
+                  fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos)) ||
+                  fZW->contains(fText->char32At(tPos))) {
+                setAppliedRule(pos, "LB 15a (sot | BK | CR | LF | NL | SP | ZW) [\\p{Pi}&QU] SP* ×");
                 continue;
               }
               // CM*.
