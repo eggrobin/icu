@@ -3180,21 +3180,22 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
           // [\p{Pi}&QU].
           if (tPos > 0 && fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
               tPos = fText->moveIndex32(tPos, -1);
-          }
-          if (tPos == 0 || fBK->contains(fText->char32At(tPos)) ||
-              fCR->contains(fText->char32At(tPos)) || fLF->contains(fText->char32At(tPos)) ||
-              fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos))) {
-              setAppliedRule(pos, "(sot | BK | CR | LF | NL | OP | QU | GL | SP) [\\p{Pi}&QU] SP* ×");
-              continue;
-          }
-          // CM*.
-          while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
-              tPos = fText->moveIndex32(tPos, -1);
-          }
-          if (tPos > 0 || fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
-              fGL->contains(fText->char32At(tPos))) {
-              setAppliedRule(pos, "(sot | BK | CR | LF | NL | OP | QU | GL | SP) [\\p{Pi}&QU] SP* ×");
-              continue;
+              if (tPos == 0 || fBK->contains(fText->char32At(tPos)) ||
+                  fCR->contains(fText->char32At(tPos)) || fLF->contains(fText->char32At(tPos)) ||
+                  fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos))) {
+                setAppliedRule(pos, "LB 15a (sot | BK | CR | LF | NL | SP) [\\p{Pi}&QU] SP* ×");
+                continue;
+              }
+              // CM*.
+              while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
+                tPos = fText->moveIndex32(tPos, -1);
+              }
+              if (tPos > 0 &&
+                  (fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
+                   fGL->contains(fText->char32At(tPos)))) {
+                setAppliedRule(pos,  "LB 15a (OP | QU | GL) [\\p{Pi}&QU] SP* ×");
+                continue;
+              }
           }
 
           if (fPf->contains(thisChar) && fQU->contains(thisChar)) {
@@ -3206,6 +3207,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
                   fLF->contains(nextChar) || fNL->contains(nextChar)) {
                 setAppliedRule(pos, "LB 15b × [\\p{Pf}&QU] ( SP | GL | WJ | CL | QU | CP | EX | IS | SY "
                                     "| BK | CR | LF | NL | eot)");
+                continue;
               }
           }
 
