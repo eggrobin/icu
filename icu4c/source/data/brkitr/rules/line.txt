@@ -250,6 +250,12 @@ $CAN_CM $CM*  $IS;
 $LB8NonBreaks [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL {eof}];
 $CM  [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL {eof}];
 
+# Messy interaction: manually chain between LB 15b and LB 15a on Pf Pi.
+$LB8NonBreaks [\p{Pf} & $QU] $CM* [\p{Pi} & $QU] $CM* $SP* .;
+$LB8NonBreaks [\p{Pf} & $QU] $CM* [\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
+$CM  [\p{Pf} & $QU] $CM* [\p{Pi} & $QU] $CM* $SP* .;
+$CM  [\p{Pf} & $QU] $CM* [\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
+
 # LB 16
 ($CL | $CP) $CM* $SP* $NS;
 
