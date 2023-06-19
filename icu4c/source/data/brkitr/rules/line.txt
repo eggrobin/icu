@@ -241,8 +241,8 @@ $CAN_CM $CM*  $IS;
 
 
 # LB 15a
-($OP $CM* $SP+ | [$OP $QU $GL]) $CM* [\p{Pi} & $QU] $CM* $SP* .;
-($OP $CM* $SP+ | [$OP $QU $GL]) $CM* [\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
+($OP $CM* $SP+ | [$OP $QU $GL] $CM*) [\p{Pi} & $QU] $CM* $SP* .;
+($OP $CM* $SP+ | [$OP $QU $GL] $CM*) [\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
 ^[\p{Pi} & $QU] $CM* $SP* .;
 ^[\p{Pi} & $QU] $CM* $SP+ $CM+ $AL_FOLLOW?;
 
