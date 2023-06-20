@@ -3191,9 +3191,9 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
                   fWJ->contains(nextChar) || fCL->contains(nextChar) || fQU->contains(nextChar) ||
                   fCP->contains(nextChar) || fEX->contains(nextChar) || fIS->contains(nextChar) ||
                   fSY->contains(nextChar) || fBK->contains(nextChar) || fCR->contains(nextChar) ||
-                  fLF->contains(nextChar) || fNL->contains(nextChar)) {
+                  fLF->contains(nextChar) || fNL->contains(nextChar) || fZW->contains(nextChar)) {
                 setAppliedRule(pos, "LB 15b × [\\p{Pf}&QU] ( SP | GL | WJ | CL | QU | CP | EX | IS | SY "
-                                    "| BK | CR | LF | NL | eot)");
+                                    "| BK | CR | LF | NL | ZW | eot)");
                 continue;
               }
           }
