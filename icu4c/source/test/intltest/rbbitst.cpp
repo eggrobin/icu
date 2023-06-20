@@ -3178,23 +3178,26 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
               tPos = fText->moveIndex32(tPos, -1);
           }
           // [\p{Pi}&QU].
-          if (tPos > 0 && fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
-              tPos = fText->moveIndex32(tPos, -1);
-              if (tPos == 0 || fBK->contains(fText->char32At(tPos)) ||
-                  fCR->contains(fText->char32At(tPos)) || fLF->contains(fText->char32At(tPos)) ||
-                  fNL->contains(fText->char32At(tPos)) || fSP->contains(fText->char32At(tPos)) ||
-                  fZW->contains(fText->char32At(tPos))) {
-                setAppliedRule(pos, "LB 15a (sot | BK | CR | LF | NL | SP | ZW) [\\p{Pi}&QU] SP* ×");
+          if (fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
+              if (tPos == 0) {
+                setAppliedRule(pos, "LB 15a sot [\\p{Pi}&QU] SP* ×");
                 continue;
+              } else {
+                tPos = fText->moveIndex32(tPos, -1);
+                if (fBK->contains(fText->char32At(tPos)) || fCR->contains(fText->char32At(tPos)) ||
+                    fLF->contains(fText->char32At(tPos)) || fNL->contains(fText->char32At(tPos)) ||
+                    fSP->contains(fText->char32At(tPos)) || fZW->contains(fText->char32At(tPos))) {
+                    setAppliedRule(pos, "LB 15a (BK | CR | LF | NL | SP | ZW) [\\p{Pi}&QU] SP* ×");
+                    continue;
+                }
               }
               // CM*.
               while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
                 tPos = fText->moveIndex32(tPos, -1);
               }
-              if (tPos > 0 &&
-                  (fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
-                   fGL->contains(fText->char32At(tPos)))) {
-                setAppliedRule(pos,  "LB 15a (OP | QU | GL) [\\p{Pi}&QU] SP* ×");
+              if (fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
+                  fGL->contains(fText->char32At(tPos))) {
+                setAppliedRule(pos, "LB 15a (OP | QU | GL) [\\p{Pi}&QU] SP* ×");
                 continue;
               }
           }
