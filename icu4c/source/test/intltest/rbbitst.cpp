@@ -3147,23 +3147,6 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
             continue;
         }
 
-
-        if (nextPos < fText->length()) {
-            // note: UnicodeString::char32At(length) returns ffff, not distinguishable
-            //       from a legit ffff noncharacter. So test length separately.
-            UChar32 nextChar = fText->char32At(nextPos);
-            if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
-                setAppliedRule(pos, "LB 14a Break before an IS that begins a number and follows a space");
-                break;
-            }
-        }
-
-
-          if (fIS->contains(thisChar)) {
-              setAppliedRule(pos, "LB 14b  Do not break before numeric separators, even after spaces.");
-              continue;
-          }
-
           // Same as LB 14, scan backward for
           // (sot | BK | CR | LF | NL | OP CM*| QU CM* | GL CM* | SP) [\p{Pi}&QU] CM* SP*.
           tPos = prevPos;
@@ -3213,6 +3196,22 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
                                     "| BK | CR | LF | NL | eot)");
                 continue;
               }
+          }
+
+          if (nextPos < fText->length()) {
+              // note: UnicodeString::char32At(length) returns ffff, not distinguishable
+              //       from a legit ffff noncharacter. So test length separately.
+              UChar32 nextChar = fText->char32At(nextPos);
+              if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
+                setAppliedRule(pos,
+                               "LB 15c Break before an IS that begins a number and follows a space");
+                break;
+              }
+          }
+
+          if (fIS->contains(thisChar)) {
+              setAppliedRule(pos, "LB 15d  Do not break before numeric separators, even after spaces.");
+              continue;
           }
 
 
