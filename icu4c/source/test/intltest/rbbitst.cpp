@@ -4333,7 +4333,7 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
                        "Break found but not expected"),
                     name, i, seed);
 
-                for (ci=startContext; (ci = testText.moveIndex32(ci, 1));) {
+                for (ci = startContext;; (ci = testText.moveIndex32(ci, 1))) {
                     UChar32  c;
                     c = testText.char32At(ci);
 
