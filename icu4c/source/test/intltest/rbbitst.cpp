@@ -3382,20 +3382,20 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
 
         if (fAP->contains(prevChar) &&
             (fAK->contains(thisChar) || thisChar == U'◌' || fAS->contains(thisChar))) {
-            setAppliedRule(pos, "LB 28b.1  AP x (AK | ◌ | AS)");
+            setAppliedRule(pos, "LB 28a.1  AP x (AK | ◌ | AS)");
             continue;
         }
 
         if ((fAK->contains(prevChar) || prevChar == U'◌' || fAS->contains(prevChar)) &&
             (fVF->contains(thisChar) || fVI->contains(thisChar))) {
-            setAppliedRule(pos, "LB 28b.2  (AK | ◌ | AS) x (VF | VI)");
+            setAppliedRule(pos, "LB 28a.2  (AK | ◌ | AS) x (VF | VI)");
             continue;
         }
 
         if ((fAK->contains(prevCharX2) || prevCharX2 == U'◌' || fAS->contains(prevCharX2)) &&
             fVI->contains(prevChar) &&
             (fAK->contains(thisChar) || thisChar == U'◌')) {
-            setAppliedRule(pos, "LB 28b.3  (AK | ◌ | AS) VI x (AK | ◌)");
+            setAppliedRule(pos, "LB 28a.3  (AK | ◌ | AS) VI x (AK | ◌)");
             continue;
         }
 
@@ -3406,7 +3406,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
             if ((fAK->contains(prevChar) || prevChar == U'◌' || fAS->contains(prevChar)) &&
                 (fAK->contains(thisChar) || thisChar == U'◌' || fAS->contains(thisChar)) &&
                 fVF->contains(nextChar)) {
-                setAppliedRule(pos, "LB 28b.4  (AK | ◌ | AS) x (AK | ◌ | AS) VF");
+                setAppliedRule(pos, "LB 28a.4  (AK | ◌ | AS) x (AK | ◌ | AS) VF");
                 continue;
             }
         }
