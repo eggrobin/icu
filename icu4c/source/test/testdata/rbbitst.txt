@@ -2211,6 +2211,7 @@ Bangkok)•</data>
 <locale en>
 <line>
 <data>•Some •« basic » •quoting•</data>
+<data>•Some •»German« •quoting•</data>
 <data>•( « bracketed » ) •quoting•</data>
 <data>•« « Nesting » »•</data>
 <data>•« Complex »« chaining » •</data>
