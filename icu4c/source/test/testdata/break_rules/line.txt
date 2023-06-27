@@ -123,17 +123,18 @@ LB15a.1:       ( OP CM* SP* | QU CM* | GL CM* ) (PiQU CM* SP*)+ .;
 # while the prefix of it, "OP CM SP" matches LB7.1
 LB14:        OP CM* SP* .;
 
-# LB 14a Break before an IS that begins a number and follows a space.
-LB14a:       SP ÷ IS CM* NU;
-
-# LB14b       × IS
-LB14b.1:     [^SP] CM* IS;
-LB14b.2:     SP IS;
-
 LB15a.2:       ^ (PiQU CM* SP*)+ .;
 # LB15b/LB15a chaining.
 LB15b.1:       ([^SP] CM* | SP) PfQU CM* (PiQU CM* SP*)+ .;
 LB15b.2:       ([^SP] CM* | SP) PfQU CM* ( SP | GL | WJ | CL | QU | CP | EX | IS | SY | BK | CR | LF | NL | ZW | $ );
+
+# LB 15c Break before an IS that begins a number and follows a space.
+LB15c:       SP ÷ IS CM* NU;
+
+# LB15d       × IS
+LB15d.1:     [^SP] CM* IS;
+LB15d.2:     SP IS;
+
 LB16:        (CL | CP)CM* SP* NS;
 LB17:        B2 CM* SP* B2;
 

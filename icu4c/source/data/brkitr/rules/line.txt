@@ -220,26 +220,6 @@ $OP $CM* $SP+ $CM+ $AL_FOLLOW?;    # by rule 10, stand-alone CM behaves as AL
                                    # by rule 8, CM following a SP is stand-alone.
 
 
-# LB 14a Force a break before start of a number with a leading decimal pt, e.g. " .23"
-#        Note: would be simpler to express as "$SP / $IS $CM* $NU;", but ICU rules have limitations.
-#        See issue ICU-20303
-
-
-$CanFollowIS = [$BK $CR $LF $NL $SP $ZW $WJ $GL $CL $CP $EX $IS $SY $QU $BA $HY $NS $ALPlus $HL $IN];
-$SP $IS           / [^ $CanFollowIS $NU $CM];
-$SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
-
-#
-# LB 14b Do not break before numeric separators (IS), even after spaces.
-
-[$LB8NonBreaks - $SP] $IS;
-$SP $IS $CM* [$CanFollowIS {eof}];
-$SP $IS $CM* $ZWJ [^$CM $NU];
-
-$CAN_CM $CM*  $IS;
-^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
-
-
 # LB 15a
 ($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ .;
 ($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
@@ -258,6 +238,27 @@ $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
 $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
 ^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
 ^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+
+
+# LB 15c Force a break before start of a number with a leading decimal pt, e.g. " .23"
+#        Note: would be simpler to express as "$SP / $IS $CM* $NU;", but ICU rules have limitations.
+#        See issue ICU-20303
+
+
+$CanFollowIS = [$BK $CR $LF $NL $SP $ZW $WJ $GL $CL $CP $EX $IS $SY $QU $BA $HY $NS $ALPlus $HL $IN];
+$SP $IS           / [^ $CanFollowIS $NU $CM];
+$SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
+
+#
+# LB 15d Do not break before numeric separators (IS), even after spaces.
+
+[$LB8NonBreaks - $SP] $IS;
+$SP $IS $CM* [$CanFollowIS {eof}];
+$SP $IS $CM* $ZWJ [^$CM $NU];
+
+$CAN_CM $CM*  $IS;
+^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
+
 
 # LB 16
 ($CL | $CP) $CM* $SP* $NS;
