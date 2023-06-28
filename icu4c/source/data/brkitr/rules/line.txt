@@ -87,7 +87,7 @@ $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 #         list it in the numerous rules that use CM.
 # By LB1, SA characters with general categor of Mn or Mc also resolve to CM.
 
-$CM = [[[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]]];
+$CM = [[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]];
 $CMX = [[$CM] - [$ZWJ]];
 
 #   Dictionary character set, for triggering language-based break engines. Currently
