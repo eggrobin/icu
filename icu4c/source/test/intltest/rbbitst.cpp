@@ -1455,8 +1455,8 @@ void RBBITest::checkUnicodeTestCase(const char *testFileName, int lineNumber,
     pos = bi->next();
 
     bool error = false;
-    std::set<int> actualBreaks;
-    std::set<int> expectedBreaks;
+    std::set<int32_t> actualBreaks;
+    std::set<int32_t> expectedBreaks;
     while (pos != BreakIterator::DONE) {
         actualBreaks.insert(pos);
         if (expectedI >= breakPositions->size()) {
@@ -1498,12 +1498,9 @@ void RBBITest::checkUnicodeTestCase(const char *testFileName, int lineNumber,
         }
         UnicodeString expected;
         UnicodeString actual;
-        int codePointIndex = 0;
-        for (int i = 0; i < testString.length(); ++i, ++codePointIndex) {
+        for (int32_t i = 0; i < testString.length();) {
             const UChar32 c = testString.char32At(i);
-            if (c > 0xFFFF) {
-              ++i;
-            }
+            i += U16_LENGTH(c);
             expected += expectedBreaks.count(i) == 1 ? "÷" : "×";
             actual += actualBreaks.count(i) == 1 ? "÷" : "×";
             expected += c;
@@ -3147,25 +3144,25 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
             continue;
         }
 
-          // Same as LB 14, scan backward for
-          // (sot | BK | CR | LF | NL | OP CM*| QU CM* | GL CM* | SP) [\p{Pi}&QU] CM* SP*.
-          tPos = prevPos;
-          // SP* (with the aforementioned Twist).
-          if (fSP->contains(prevChar)) {
-              while (tPos > 0 && fSP->contains(fText->char32At(tPos))) {
+        // Same as LB 14, scan backward for
+        // (sot | BK | CR | LF | NL | OP CM*| QU CM* | GL CM* | SP) [\p{Pi}&QU] CM* SP*.
+        tPos = prevPos;
+        // SP* (with the aforementioned Twist).
+        if (fSP->contains(prevChar)) {
+            while (tPos > 0 && fSP->contains(fText->char32At(tPos))) {
                 tPos = fText->moveIndex32(tPos, -1);
-              }
-          }
-          // CM*.
-          while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
-              tPos = fText->moveIndex32(tPos, -1);
-          }
-          // [\p{Pi}&QU].
-          if (fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
-              if (tPos == 0) {
+            }
+        }
+        // CM*.
+        while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
+            tPos = fText->moveIndex32(tPos, -1);
+        }
+        // [\p{Pi}&QU].
+        if (fPi->contains(fText->char32At(tPos)) && fQU->contains(fText->char32At(tPos))) {
+            if (tPos == 0) {
                 setAppliedRule(pos, "LB 15a sot [\\p{Pi}&QU] SP* ×");
                 continue;
-              } else {
+            } else {
                 tPos = fText->moveIndex32(tPos, -1);
                 if (fBK->contains(fText->char32At(tPos)) || fCR->contains(fText->char32At(tPos)) ||
                     fLF->contains(fText->char32At(tPos)) || fNL->contains(fText->char32At(tPos)) ||
@@ -3173,47 +3170,46 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
                     setAppliedRule(pos, "LB 15a (BK | CR | LF | NL | SP | ZW) [\\p{Pi}&QU] SP* ×");
                     continue;
                 }
-              }
-              // CM*.
-              while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
+            }
+            // CM*.
+            while (tPos > 0 && fCM->contains(fText->char32At(tPos))) {
                 tPos = fText->moveIndex32(tPos, -1);
-              }
-              if (fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
-                  fGL->contains(fText->char32At(tPos))) {
+            }
+            if (fOP->contains(fText->char32At(tPos)) || fQU->contains(fText->char32At(tPos)) ||
+                fGL->contains(fText->char32At(tPos))) {
                 setAppliedRule(pos, "LB 15a (OP | QU | GL) [\\p{Pi}&QU] SP* ×");
                 continue;
-              }
-          }
+            }
+        }
 
-          if (fPf->contains(thisChar) && fQU->contains(thisChar)) {
-              UChar32 nextChar = fText->char32At(nextPos);
-              if (nextPos == fText->length() || fSP->contains(nextChar) || fGL->contains(nextChar) ||
-                  fWJ->contains(nextChar) || fCL->contains(nextChar) || fQU->contains(nextChar) ||
-                  fCP->contains(nextChar) || fEX->contains(nextChar) || fIS->contains(nextChar) ||
-                  fSY->contains(nextChar) || fBK->contains(nextChar) || fCR->contains(nextChar) ||
-                  fLF->contains(nextChar) || fNL->contains(nextChar) || fZW->contains(nextChar)) {
+        if (fPf->contains(thisChar) && fQU->contains(thisChar)) {
+            UChar32 nextChar = fText->char32At(nextPos);
+            if (nextPos == fText->length() || fSP->contains(nextChar) || fGL->contains(nextChar) ||
+                fWJ->contains(nextChar) || fCL->contains(nextChar) || fQU->contains(nextChar) ||
+                fCP->contains(nextChar) || fEX->contains(nextChar) || fIS->contains(nextChar) ||
+                fSY->contains(nextChar) || fBK->contains(nextChar) || fCR->contains(nextChar) ||
+                fLF->contains(nextChar) || fNL->contains(nextChar) || fZW->contains(nextChar)) {
                 setAppliedRule(pos, "LB 15b × [\\p{Pf}&QU] ( SP | GL | WJ | CL | QU | CP | EX | IS | SY "
                                     "| BK | CR | LF | NL | ZW | eot)");
                 continue;
-              }
-          }
+            }
+        }
 
-          if (nextPos < fText->length()) {
-              // note: UnicodeString::char32At(length) returns ffff, not distinguishable
-              //       from a legit ffff noncharacter. So test length separately.
-              UChar32 nextChar = fText->char32At(nextPos);
-              if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
+        if (nextPos < fText->length()) {
+            // note: UnicodeString::char32At(length) returns ffff, not distinguishable
+            //       from a legit ffff noncharacter. So test length separately.
+            UChar32 nextChar = fText->char32At(nextPos);
+            if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
                 setAppliedRule(pos,
                                "LB 15c Break before an IS that begins a number and follows a space");
                 break;
-              }
-          }
+            }
+        }
 
-          if (fIS->contains(thisChar)) {
-              setAppliedRule(pos, "LB 15d  Do not break before numeric separators, even after spaces.");
-              continue;
-          }
-
+        if (fIS->contains(thisChar)) {
+            setAppliedRule(pos, "LB 15d  Do not break before numeric separators, even after spaces.");
+            continue;
+        }
 
         //    Scan backwards for SP* CM* (CL | CP)
         if (fNS->contains(thisChar)) {
