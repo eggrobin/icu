@@ -4483,6 +4483,7 @@ void RBBITest::TestBug9983()  {
 // Bug 7547 - verify that building a break itereator from empty rules produces an error.
 //
 void RBBITest::TestBug7547() {
+    char name[100] = {};
     UErrorCode status = U_ZERO_ERROR;
     std::vector<UnicodeSet> sets;
     for (ULineBreak lb = (ULineBreak)u_getIntPropertyMinValue(UCHAR_LINE_BREAK);
@@ -4521,8 +4522,7 @@ void RBBITest::TestBug7547() {
                 std::printf("Line break is not grapheme break at %d:\n", line_break);
                 for (int i = std::max(0, line_break - 5); i < std::min(s.length(), line_break + 5);
                      i += UTF16_CHAR_LENGTH(s.char32At(i))) {
-                    char name[64] = {};
-                    u_charName(s.char32At(i), U_CHAR_NAME_ALIAS, name, 64, &status);
+                    u_charName(s.char32At(i), U_EXTENDED_CHAR_NAME, name, 100, &status);
                     std::printf("%3d GCB: %s LB: %s U+%04X %s\n", i,
                                 (grapheme_breaks.count(i) ? "÷" : " "), (i == line_break ? "÷" : " "),
                                 s.char32At(i), name);
