@@ -23,21 +23,11 @@
 !!chain;
 !!quoted_literals_only;
 
-# Prototype definitions for L2/22-080R
-# Line breaking at orthographic syllable boundaries
-
-$AK = [\u1B05-\u1B33 \u1B45-\u1B4C \u25CC \uA984-\uA9B2 \U00011005-\U00011037 \U00011071-\U00011072 \U00011075 \U00011305-\U0001130C \U0001130F-\U00011310 \U00011313-\U00011328 \U0001132A-\U00011330 \U00011332-\U00011333 \U00011335-\U00011339 \U00011360-\U00011361 \U00011392-\U000113B5 \U00011F04-\U00011F10 \U00011F12-\U00011F33];
-
-$AP = [\U00011003-\U00011004 \U000113D1 \U00011F02];
-
-$AS = [\u1BC0-\u1BE5 \uAA00-\uAA28 \U00011066-\U0001106F \U00011350 \U0001135E-\U0001135F \U00011380-\U00011389 \U0001138B \U0001138E \U00011390-\U00011391 \U00011EE0-\U00011EF1 \U00011F50-\U00011F59];
-
-$VF = [\u1BF2-\u1BF3];
-
-$VI = [\u1B44 \uA9C0 \U00011046 \U0001134D \U000113D0 \U00011F42];
-
 $AI = [:LineBreak =  Ambiguous:];
+$AK = [:LineBreak =  Aksara:];
 $AL = [:LineBreak =  Alphabetic:];
+$AP = [:LineBreak =  Aksara_Prebase:];
+$AS = [:LineBreak =  Aksara_Start:];
 $BA = [:LineBreak =  Break_After:];
 $HH = [\u2010];     # \u2010 is HYPHEN, default line break is BA.
 $BB = [:LineBreak =  Break_Before:];
@@ -77,6 +67,8 @@ $SA = [:LineBreak =  Complex_Context:];
 $SG = [:LineBreak =  Surrogate:];
 $SP = [:LineBreak =  Space:];
 $SY = [:LineBreak =  Break_Symbols:];
+$VF = [:LineBreak =  Virama_Final:];
+$VI = [:LineBreak =  Virama:];
 $WJ = [:LineBreak =  Word_Joiner:];
 $XX = [:LineBreak =  Unknown:];
 $ZW = [:LineBreak =  ZWSpace:];
@@ -95,7 +87,7 @@ $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 #         list it in the numerous rules that use CM.
 # By LB1, SA characters with general categor of Mn or Mc also resolve to CM.
 
-$CM = [[[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]] - [$VF $VI]];
+$CM = [[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]];
 $CMX = [[$CM] - [$ZWJ]];
 
 #   Dictionary character set, for triggering language-based break engines. Currently
@@ -110,7 +102,7 @@ $dictionary = [$SA];
 #                               XX  (Unknown, unassigned)
 #                         as $AL  (Alphabetic)
 #
-$ALPlus = [[$AL $AI $SG $XX [$SA-[[:Mn:][:Mc:]]]] - [$AS $AK $AP]];
+$ALPlus = [$AL $AI $SG $XX [$SA-[[:Mn:][:Mc:]]]];
 
 
 ## -------------------------------------------------
@@ -228,7 +220,27 @@ $OP $CM* $SP+ $CM+ $AL_FOLLOW?;    # by rule 10, stand-alone CM behaves as AL
                                    # by rule 8, CM following a SP is stand-alone.
 
 
-# LB 14a Force a break before start of a number with a leading decimal pt, e.g. " .23"
+# LB 15a
+($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ .;
+($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+^([\p{Pi} & $QU] $CM* $SP*)+ .;
+^([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+
+# LB 15b
+$LB8NonBreaks [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL $ZW {eof}];
+$CAN_CM $CM*  [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL $ZW {eof}];
+^$CM+  [\p{Pf} & $QU] $CM* [$SP $GL $WJ $CL $QU $CP $EX $IS $SY $BK $CR $LF $NL $ZW {eof}];
+
+# Messy interaction: manually chain between LB 15b and LB 15a on Pf Pi.
+$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
+$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
+$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
+^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
+
+
+# LB 15c Force a break before start of a number with a leading decimal pt, e.g. " .23"
 #        Note: would be simpler to express as "$SP / $IS $CM* $NU;", but ICU rules have limitations.
 #        See issue ICU-20303
 
@@ -238,7 +250,7 @@ $SP $IS           / [^ $CanFollowIS $NU $CM];
 $SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
 
 #
-# LB 14b Do not break before numeric separators (IS), even after spaces.
+# LB 15d Do not break before numeric separators (IS), even after spaces.
 
 [$LB8NonBreaks - $SP] $IS;
 $SP $IS $CM* [$CanFollowIS {eof}];
@@ -247,9 +259,6 @@ $SP $IS $CM* $ZWJ [^$CM $NU];
 $CAN_CM $CM*  $IS;
 ^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
 
-
-# LB 15
-$QU $CM* $SP* $OP;
 
 # LB 16
 ($CL | $CP) $CM* $SP* $NS;
@@ -351,8 +360,8 @@ $PR $CM* ($JL | $JV | $JT | $H2 | $H3);
 ($ALPlus | $HL) $CM* ($ALPlus | $HL);
 ^$CM+ ($ALPlus | $HL);      # The $CM+ is from rule 10, an unattached CM is treated as AL
 
-#LB 28b  Do not break Orthographic syllables
-($AP $CM*)? ($AS | $AK) ($CM* $VI $CM* $AK)* ($CM* $VI | (($CM* $AS | $CM* $AK)? $CM* $VF))?;
+#LB 28a  Do not break Orthographic syllables
+($AP $CM*)? ($AS | $AK | [◌] ) ($CM* $VI $CM* ($AK | [◌] ))* ($CM* $VI | (($CM* ($AS | $AK | [◌] ) )? $CM* $VF))?;
 
 # LB 29
 $IS $CM* ($ALPlus | $HL);
