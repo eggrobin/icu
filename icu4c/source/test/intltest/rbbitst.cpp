@@ -15,6 +15,7 @@
 #if !UCONFIG_NO_BREAK_ITERATION
 
 #include <algorithm>
+#include <map>
 #include <set>
 #include <sstream>
 #include <stdio.h>
@@ -4482,15 +4483,52 @@ void RBBITest::TestBug9983()  {
 // Bug 7547 - verify that building a break itereator from empty rules produces an error.
 //
 void RBBITest::TestBug7547() {
-    UnicodeString rules;
     UErrorCode status = U_ZERO_ERROR;
-    UParseError parseError;
-    RuleBasedBreakIterator breakIterator(rules, parseError, status);
-    if (status != U_BRK_RULE_SYNTAX) {
-        errln("%s:%d Expected U_BRK_RULE_SYNTAX, got %s", __FILE__, __LINE__, u_errorName(status));
+    std::vector<UnicodeSet> sets;
+    for (ULineBreak lb = (ULineBreak)u_getIntPropertyMinValue(UCHAR_LINE_BREAK);
+         lb <= u_getIntPropertyMaxValue(UCHAR_LINE_BREAK); lb = (ULineBreak)(lb + 1)) {
+        for (UGraphemeClusterBreak gcb =
+                 (UGraphemeClusterBreak)u_getIntPropertyMinValue(UCHAR_GRAPHEME_CLUSTER_BREAK);
+             gcb <= u_getIntPropertyMaxValue(UCHAR_GRAPHEME_CLUSTER_BREAK);
+             gcb = (UGraphemeClusterBreak)(gcb + 1)) {
+           UnicodeSet lb_set;
+           UnicodeSet gcb_set;
+           lb_set.applyIntPropertyValue(UCHAR_LINE_BREAK, lb, status);
+           gcb_set.applyIntPropertyValue(UCHAR_GRAPHEME_CLUSTER_BREAK, gcb, status);
+           lb_set.retainAll(gcb_set);
+           if (!lb_set.isEmpty()) {
+                sets.push_back(lb_set);
+           }
+        }
     }
-    if (parseError.line != 1 || parseError.offset != 0) {
-        errln("parseError (line, offset) expected (1, 0), got (%d, %d)", parseError.line, parseError.offset);
+    auto *const lb = BreakIterator::createLineInstance(Locale::getRoot(), status);
+    auto *const gcb = BreakIterator::createCharacterInstance(Locale::getRoot(), status);
+    for (int n = 0; n < 1e6; ++n) {
+        UnicodeString s;
+        for (int j = 0; j < 64; ++j) {
+           auto const &set = sets[std::rand() % sets.size()];
+           s.append(set.charAt(std::rand() % set.size()));
+        }
+        lb->setText(s);
+        gcb->setText(s);
+        std::set<int> grapheme_breaks;
+        for (int grapheme_break = gcb->next(); grapheme_break != BreakIterator::DONE;
+             grapheme_break = gcb->next()) {
+           grapheme_breaks.insert(grapheme_break);
+        }
+        for (int line_break = lb->next(); line_break != BreakIterator::DONE; line_break = lb->next()) {
+           if (grapheme_breaks.count(line_break) == 0) {
+                std::printf("Line break is not grapheme break at %d:\n", line_break);
+                for (int i = std::max(0, line_break - 5); i < std::min(s.length(), line_break + 5);
+                     i += UTF16_CHAR_LENGTH(s.char32At(i))) {
+                    char name[64] = {};
+                    u_charName(s.char32At(i), U_CHAR_NAME_ALIAS, name, 64, &status);
+                    std::printf("%3d GCB: %s LB: %s U+%04X %s\n", i,
+                                (grapheme_breaks.count(i) ? "÷" : " "), (i == line_break ? "÷" : " "),
+                                s.char32At(i), name);
+                }
+           }
+        }
     }
 }
 
