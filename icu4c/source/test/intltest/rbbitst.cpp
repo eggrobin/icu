@@ -4513,19 +4513,31 @@ void RBBITest::TestBug7547() {
         lb->setText(s);
         gcb->setText(s);
         std::set<int> grapheme_breaks;
+        std::set<int> line_breaks;
         for (int grapheme_break = gcb->next(); grapheme_break != BreakIterator::DONE;
              grapheme_break = gcb->next()) {
            grapheme_breaks.insert(grapheme_break);
         }
         for (int line_break = lb->next(); line_break != BreakIterator::DONE; line_break = lb->next()) {
+           line_breaks.insert(line_break);
+        }
+        for (int const line_break : line_breaks) {
            if (grapheme_breaks.count(line_break) == 0) {
                 std::printf("Line break is not grapheme break at %d:\n", line_break);
                 for (int i = std::max(0, line_break - 5); i < std::min(s.length(), line_break + 5);
                      i += UTF16_CHAR_LENGTH(s.char32At(i))) {
                     u_charName(s.char32At(i), U_EXTENDED_CHAR_NAME, name, 100, &status);
-                    std::printf("%3d GCB: %s LB: %s U+%04X %s\n", i,
-                                (grapheme_breaks.count(i) ? "÷" : " "), (i == line_break ? "÷" : " "),
-                                s.char32At(i), name);
+                    std::printf(
+                        "%3d %s %s GCB=%s LB=%s U+%04X %s\n", i, (grapheme_breaks.count(i) ? "÷" : " "),
+                        ((line_breaks.count(i)) ? "÷" : " "),
+                        u_getPropertyValueName(
+                            UCHAR_GRAPHEME_CLUSTER_BREAK,
+                            u_getIntPropertyValue(s.char32At(i), UCHAR_GRAPHEME_CLUSTER_BREAK),
+                            U_SHORT_PROPERTY_NAME),
+                        u_getPropertyValueName(UCHAR_LINE_BREAK,
+                                               u_getIntPropertyValue(s.char32At(i), UCHAR_LINE_BREAK),
+                                               U_SHORT_PROPERTY_NAME),
+                        s.char32At(i), name);
                 }
            }
         }
