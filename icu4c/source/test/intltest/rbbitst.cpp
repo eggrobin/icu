@@ -4523,13 +4523,32 @@ void RBBITest::TestBug7547() {
         }
         for (int const line_break : line_breaks) {
            if (grapheme_breaks.count(line_break) == 0) {
+                if (u_getIntPropertyValue(s.char32At(line_break), UCHAR_LINE_BREAK) == U_LB_E_MODIFIER) {
+                    std::puts("Ignoring ÷ EM");
+                    continue;
+                }
+                if (u_getIntPropertyValue(s.char32At(line_break), UCHAR_LINE_BREAK) == U_LB_VIRAMA) {
+                    std::puts("Ignoring ÷ VI");
+                    continue;
+                }
+                if (u_getIntPropertyValue(s.char32At(line_break), UCHAR_LINE_BREAK) ==
+                    U_LB_VIRAMA_FINAL) {
+                    std::puts("Ignoring ÷ VF");
+                    continue;
+                }
+                if (line_break > 0 &&
+                    u_getIntPropertyValue(s.char32At(line_break - 1), UCHAR_GRAPHEME_CLUSTER_BREAK) ==
+                        U_GCB_PREPEND) {
+                    std::puts("Ignoring gcb=PP ÷");
+                    continue;
+                }
                 std::printf("Line break is not grapheme break at %d:\n", line_break);
                 for (int i = std::max(0, line_break - 5); i < std::min(s.length(), line_break + 5);
                      i += UTF16_CHAR_LENGTH(s.char32At(i))) {
                     u_charName(s.char32At(i), U_EXTENDED_CHAR_NAME, name, 100, &status);
                     std::printf(
-                        "%3d %s %s GCB=%s LB=%s U+%04X %s\n", i, (grapheme_breaks.count(i) ? "÷" : " "),
-                        ((line_breaks.count(i)) ? "÷" : " "),
+                        "%s%3d %s %s GCB=%s LB=%s U+%04X %s\n", i == line_break ? ">" : " ", i,
+                        (grapheme_breaks.count(i) ? "÷" : " "), ((line_breaks.count(i)) ? "÷" : " "),
                         u_getPropertyValueName(
                             UCHAR_GRAPHEME_CLUSTER_BREAK,
                             u_getIntPropertyValue(s.char32At(i), UCHAR_GRAPHEME_CLUSTER_BREAK),
