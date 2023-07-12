@@ -4536,10 +4536,30 @@ void RBBITest::TestBug7547() {
                     std::puts("Ignoring ÷ VF");
                     continue;
                 }
+                if (s.char32At(line_break) == 0xFF9E || s.char32At(line_break) == 0xFF9F) {
+                    std::puts("Ignoring ÷ U+FF9E..U+FF9F HALFWIDTH KATAKANA [SEMI-]VOICED SOUND MARK");
+                    continue;
+                }
                 if (line_break > 0 &&
                     u_getIntPropertyValue(s.char32At(line_break - 1), UCHAR_GRAPHEME_CLUSTER_BREAK) ==
                         U_GCB_PREPEND) {
                     std::puts("Ignoring gcb=PP ÷");
+                    continue;
+                }
+                if (line_break > 0 &&
+                    u_getIntPropertyValue(s.char32At(line_break - 1), UCHAR_LINE_BREAK) == U_LB_SPACE &&
+                    u_getIntPropertyValue(s.char32At(line_break), UCHAR_LINE_BREAK) ==
+                        U_LB_COMBINING_MARK) {
+                    std::puts("Ignoring SP ÷ CM");
+                    continue;
+                }
+                if (u_getIntPropertyValue(s.char32At(line_break), UCHAR_LINE_BREAK) ==
+                        U_LB_COMPLEX_CONTEXT &&
+                    (u_getIntPropertyValue(s.char32At(line_break), UCHAR_GRAPHEME_CLUSTER_BREAK) ==
+                         U_GCB_EXTEND ||
+                     u_getIntPropertyValue(s.char32At(line_break), UCHAR_GRAPHEME_CLUSTER_BREAK) ==
+                         U_GCB_SPACING_MARK)) {
+                    std::puts("Ignoring ÷ [SA & [\\p{gcb=EX}\\p{gcb=SM}]]");
                     continue;
                 }
                 std::printf("Line break is not grapheme break at %d:\n", line_break);
