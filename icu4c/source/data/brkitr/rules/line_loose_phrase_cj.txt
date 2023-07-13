@@ -403,7 +403,7 @@ $PR $CM* ($JL | $JV | $JT | $H2 | $H3);
 ^$CM+ ($ALPlus | $HL);      # The $CM+ is from rule 10, an unattached CM is treated as AL
 
 #LB 28a  Do not break Orthographic syllables
-($AP $CM*)? ($AS | $AK | [◌] ) ($CM* $VI $CM* ($AK | [◌] ))* ($CM* $VI | (($CM* ($AS | $AK | [◌] ) )? $CM* $VF))?;
+($AP $CM*)? ($AS | $AK | [\u25CC] ) ($CM* $VI $CM* ($AK | [\u25CC] ))* ($CM* $VI | (($CM* ($AS | $AK | [\u25CC] ) )? $CM* $VF))?;
 
 # LB 29
 $IS $CM* ($ALPlus | $HL);
