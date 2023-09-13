@@ -4024,6 +4024,9 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
                 errln("%s:%d c < 0", __FILE__, __LINE__);
                 break;
             }
+            if (U16_IS_SURROGATE(c)) {
+              continue;
+            }
             // Do not assemble a supplementary character from randomly generated separate surrogates.
             //   (It could be a dictionary character)
             if (U16_IS_TRAIL(c) && testText.length() > 0 && U16_IS_LEAD(testText.charAt(testText.length()-1))) {
@@ -4139,6 +4142,18 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
                 lastBreakPos = breakPos;
             }
         }
+
+        auto const filename =
+            std::string(R"(C:\Users\robin\Projects\Unicode\icu\monkey_)") + name + ".txt";
+        auto const file = fopen(filename.c_str(), "a");
+        for (i=0; i < testText.length();) {
+            fprintf(file, expectedBreaks[i] ? "÷ " : "× ");
+            char32_t const c = testText.char32At(i);
+            fprintf(file, "%04X ", c);
+            i += U16_LENGTH(c);
+        }
+        fprintf(file, expectedBreaks[testText.length()] ? "÷  # 🐒\n" : "×  # 🐒\n");
+        fclose(file);
 
         // Compare the expected and actual results.
         for (i=0; i<=testText.length(); i++) {
