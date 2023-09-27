@@ -3850,6 +3850,7 @@ void RBBITest::TestMonkey() {
     UnicodeString  breakType = "all";
     Locale         locale("en");
     UBool          useUText  = false;
+    UBool          scalarsOnly = false;
     std::string    exportPath;
 
     if (quick == false) {
@@ -3882,6 +3883,12 @@ void RBBITest::TestMonkey() {
             p = pathMatcher.replaceFirst("", status);
         }
 
+        RegexMatcher s(" *scalars_only", p, 0, status);
+        if (s.find()) {
+            scalarsOnly = true;
+            s.reset();
+            p = s.replaceFirst("", status);
+        }
 
         // m.reset(p);
         if (RegexMatcher(UNICODE_STRING_SIMPLE("\\S"), p, 0, status).find()) {
@@ -3901,10 +3908,10 @@ void RBBITest::TestMonkey() {
         RBBICharMonkey  m;
         BreakIterator  *bi = BreakIterator::createCharacterInstance(locale, status);
         if (U_SUCCESS(status)) {
-            RunMonkey(bi, m, "char", seed, loopCount, useUText, file);
+            RunMonkey(bi, m, "char", seed, loopCount, useUText, file, scalarsOnly);
             if (breakType == "all" && useUText==false) {
                 // Also run a quick test with UText when "all" is specified
-                RunMonkey(bi, m, "char", seed, loopCount, true, nullptr);
+                RunMonkey(bi, m, "char", seed, loopCount, true, nullptr, scalarsOnly);
             }
         }
         else {
@@ -3922,7 +3929,7 @@ void RBBITest::TestMonkey() {
         RBBIWordMonkey  m;
         BreakIterator  *bi = BreakIterator::createWordInstance(locale, status);
         if (U_SUCCESS(status)) {
-            RunMonkey(bi, m, "word", seed, loopCount, useUText, file);
+            RunMonkey(bi, m, "word", seed, loopCount, useUText, file, scalarsOnly);
         }
         else {
             errcheckln(status, "Creation of word break iterator failed %s", u_errorName(status));
@@ -3942,7 +3949,7 @@ void RBBITest::TestMonkey() {
             loopCount = loopCount / 5;   // Line break runs slower than the others.
         }
         if (U_SUCCESS(status)) {
-            RunMonkey(bi, m, "line", seed, loopCount, useUText, file);
+            RunMonkey(bi, m, "line", seed, loopCount, useUText, file, scalarsOnly);
         }
         else {
             errcheckln(status, "Creation of line break iterator failed %s", u_errorName(status));
@@ -3962,7 +3969,7 @@ void RBBITest::TestMonkey() {
             loopCount = loopCount / 10;   // Sentence runs slower than the other break types
         }
         if (U_SUCCESS(status)) {
-            RunMonkey(bi, m, "sent", seed, loopCount, useUText, file);
+            RunMonkey(bi, m, "sent", seed, loopCount, useUText, file, scalarsOnly);
         }
         else {
             errcheckln(status, "Creation of line break iterator failed %s", u_errorName(status));
@@ -3979,16 +3986,19 @@ void RBBITest::TestMonkey() {
 //
 //  Run a RBBI monkey test.  Common routine, for all break iterator types.
 //    Parameters:
-//       bi         - the break iterator to use
-//       mk         - MonkeyKind, abstraction for obtaining expected results
-//       name       - Name of test (char, word, etc.) for use in error messages
-//       seed       - Seed for starting random number generator (parameter from user)
+//       bi          - the break iterator to use
+//       mk          - MonkeyKind, abstraction for obtaining expected results
+//       name        - Name of test (char, word, etc.) for use in error messages
+//       seed        - Seed for starting random number generator (parameter from user)
 //       numIterations
-//       exportFile - Pointer to a file to which the test cases will be written in
-//                    UCD format.  May be null.
+//       exportFile  - Pointer to a file to which the test cases will be written in
+//                     UCD format.  May be null.
+//       scalarsOnly - Only test sequences of Unicode scalar values; if this is false,
+//                     arbitrary sequences of code points (including unpaired surrogates)
+//                     are tested.
 //
 void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name, uint32_t  seed,
-                         int32_t numIterations, UBool useUText, FILE *exportFile) {
+                         int32_t numIterations, UBool useUText, FILE *exportFile, UBool scalarsOnly) {
 
 #if !UCONFIG_NO_REGULAR_EXPRESSIONS
 
@@ -4053,7 +4063,7 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
                 errln("%s:%d c < 0", __FILE__, __LINE__);
                 break;
             }
-            if (U16_IS_SURROGATE(c)) {
+            if (scalarsOnly && U16_IS_SURROGATE(c)) {
               continue;
             }
             // Do not assemble a supplementary character from randomly generated separate surrogates.
