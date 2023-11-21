@@ -319,22 +319,10 @@ $PR $CM* ($ID | $EB | $EM);
 #
 # LB 25   Numbers.
 #
-#(($PR | $PO) $CM*)? (($OP | $HY) $CM*)? ($IS $CM*)? $NU ($CM* ($NU | $SY | $IS))*
-#    ($CM* ($CL | $CP))? ($CM* ($PR | $PO))?;
-$CL $CM* $PO;
-$CP $CM* $PO;
-$CL $CM* $PR;
-$CP $CM* $PR;
-$NU $CM* $PO;
-$NU $CM* $PR;
-$PO $CM* $OP;
-$PO $CM* $NU;
-$PR $CM* $OP;
-$PR $CM* $NU;
-$HY $CM* $NU;
-$IS $CM* $NU;
-$NU $CM* $NU;
-$SY $CM* $NU;
+(($PR | $PO) $CM*)? (($OP | $HY) $CM*)?
+# ($IS $CM*)?
+$NU ($CM* ($NU | $SY | $IS))*
+    ($CM* ($CL | $CP))? ($CM* ($PR | $PO))?;
 
 # LB 26  Do not break a Korean syllable
 #
