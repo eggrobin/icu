@@ -3034,6 +3034,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
         if (fCL->contains(thisChar) ||
                 fCP->contains(thisChar) ||
                 fEX->contains(thisChar) ||
+                fIS->contains(thisChar) ||
                 fSY->contains(thisChar)) {
             setAppliedRule(pos, "LB 13  Don't break before closings.");
             continue;
@@ -3059,23 +3060,6 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
         if (fOP->contains(fText->char32At(tPos))) {
             setAppliedRule(pos, "LB 14 Don't break after OP SP*");
             continue;
-        }
-
-
-        if (nextPos < fText->length()) {
-            // note: UnicodeString::char32At(length) returns ffff, not distinguishable
-            //       from a legit ffff character. So test length separately.
-            UChar32 nextChar = fText->char32At(nextPos);
-            if (fSP->contains(prevChar) && fIS->contains(thisChar) && fNU->contains(nextChar)) {
-                setAppliedRule(pos, "LB 14a Break before an IS that begins a number and follows a space");
-                break;
-            }
-        }
-
-
-          if (fIS->contains(thisChar)) {
-              setAppliedRule(pos, "LB 14b  Do not break before numeric separators, even after spaces.");
-              continue;
         }
 
 
