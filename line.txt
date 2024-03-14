@@ -207,6 +207,9 @@ $LB8NonBreaks $SY;
 $CAN_CM $CM*  $SY;
 ^$CM+         $SY;              # by rule 10, stand-alone CM behaves as AL
 
+$LB8NonBreaks $IS;
+$CAN_CM $CM*  $IS;
+^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
 
 #
 # LB 14  Do not break after OP, even after spaces
@@ -218,7 +221,6 @@ $OP $CM* $SP* .;
 
 $OP $CM* $SP+ $CM+ $AL_FOLLOW?;    # by rule 10, stand-alone CM behaves as AL
                                    # by rule 8, CM following a SP is stand-alone.
-
 
 # LB 15a
 ($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ .;
@@ -238,27 +240,6 @@ $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
 $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
 ^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ .;
 ^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
-
-
-# LB 15c Force a break before start of a number with a leading decimal pt, e.g. " .23"
-#        Note: would be simpler to express as "$SP / $IS $CM* $NU;", but ICU rules have limitations.
-#        See issue ICU-20303
-
-
-$CanFollowIS = [$BK $CR $LF $NL $SP $ZW $WJ $GL $CL $CP $EX $IS $SY $QU $BA $HY $NS $ALPlus $HL $IN];
-$SP $IS           / [^ $CanFollowIS $NU $CM];
-$SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
-
-#
-# LB 15d Do not break before numeric separators (IS), even after spaces.
-
-[$LB8NonBreaks - $SP] $IS;
-$SP $IS $CM* [$CanFollowIS {eof}];
-$SP $IS $CM* $ZWJ [^$CM $NU];
-
-$CAN_CM $CM*  $IS;
-^$CM+         $IS;              # by rule 10, stand-alone CM behaves as AL
-
 
 # LB 16
 ($CL | $CP) $CM* $SP* $NS;
@@ -291,19 +272,7 @@ $LB20NonBreaks = [$LB18NonBreaks - $CB];
 #             Originally added as a Finnish tailoring, now promoted to default ICU behavior.
 #             Note: this is not default UAX-14 behaviour. See issue ICU-8151.
 #
-^($HY | $HH) $CM* $ALPlus;
-$GL ($HY | $HH) $CM* $ALPlus; 
-# Non-breaking CB from LB8a:
-$CB $CM* $ZWJ ($HY | $HH) $CM* $ALPlus;
-# Non-breaking SP from LB14:
-$OP $CM* $SP+ ($HY | $HH) $CM* $ALPlus; 
-# Non-breaking SP from LB15a:
-($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
-^([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
-# Non-breaking SP from LB15a following LB15b:
-$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
-$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
-^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
+# ^($HY | $HH) $CM* $ALPlus;
 
 # LB 21        x   (BA | HY | NS)
 #           BB x
@@ -353,8 +322,22 @@ $PR $CM* ($ID | $EB | $EM);
 #
 # LB 25   Numbers.
 #
-(($PR | $PO) $CM*)? (($OP | $HY) $CM*)? ($IS $CM*)? $NU ($CM* ($NU | $SY | $IS))*
-    ($CM* ($CL | $CP))? ($CM* ($PR | $PO))?;
+#(($PR | $PO) $CM*)? (($OP | $HY) $CM*)? ($IS $CM*)? $NU ($CM* ($NU | $SY | $IS))*
+#    ($CM* ($CL | $CP))? ($CM* ($PR | $PO))?;
+$CL $CM* $PO;
+$CP $CM* $PO;
+$CL $CM* $PR;
+$CP $CM* $PR;
+$NU $CM* $PO;
+$NU $CM* $PR;
+$PO $CM* $OP;
+$PO $CM* $NU;
+$PR $CM* $OP;
+$PR $CM* $NU;
+$HY $CM* $NU;
+$IS $CM* $NU;
+$NU $CM* $NU;
+$SY $CM* $NU;
 
 # LB 26  Do not break a Korean syllable
 #
