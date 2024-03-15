@@ -2707,6 +2707,7 @@ private:
     UnicodeSet  *fVI;
     UnicodeSet  *fPi;
     UnicodeSet  *fPf;
+    UnicodeSet  *feaFWH;
 
     BreakIterator        *fCharBI;
     const UnicodeString  *fText;
@@ -2785,6 +2786,8 @@ RBBILineMonkey::RBBILineMonkey() :
 
     fPi = new UnicodeSet(uR"([\p{Pi}])", status);
     fPf = new UnicodeSet(uR"([\p{Pf}])", status);
+
+    feaFWH = new UnicodeSet(uR"([\p{ea=F}\p{ea=W}\p{ea=H}])", status);
 
     if (U_FAILURE(status)) {
         deferredStatus = status;
@@ -3260,12 +3263,43 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
             break;
         }
 
-        //    x   QU
-        //    QU  x
-        if (fQU->contains(thisChar) || fQU->contains(prevChar)) {
+        // LB 19
+        // × [QU-\p{Pi}]
+        if (fQU->contains(thisChar) && !fPi->contains(thisChar)) {
             setAppliedRule(pos, "LB 19");
             continue;
         }
+        // [^\p{ea=F}\p{ea=W}\p{ea=H}] × [\p{Pi}&QU]
+        if (!feaFWH->contains(prevChar) && fPi->contains(thisChar) && fQU->contains(thisChar)) {
+            setAppliedRule(pos, "LB 19");
+            continue;
+        }
+        // × [\p{Pi}&QU] [^\p{ea=F}\p{ea=W}\p{ea=H}]
+        if (nextPos < fText->length()) {
+            UChar32 nextChar = fText->char32At(nextPos);
+            if (fPi->contains(thisChar) && fQU->contains(thisChar) && !feaFWH->contains(nextChar)) {
+                setAppliedRule(pos, "LB 19");
+                continue;
+            }
+        }
+
+        // [QU-\p{Pf}] ×
+        if (fQU->contains(prevChar) && !fPf->contains(prevChar)) {
+            setAppliedRule(pos, "LB 19");
+            continue;
+        }
+        // [\p{Pf}&QU] × [^\p{ea=F}\p{ea=W}\p{ea=H}]
+        if (fPf->contains(prevChar) && fQU->contains(prevChar) && !feaFWH->contains(thisChar)) {
+            setAppliedRule(pos, "LB 19");
+            continue;
+        }
+        // [^\p{ea=F}\p{ea=W}\p{ea=H}] [\p{Pf}&QU] ×
+        if (!feaFWH->contains(prevCharX2) && fPf->contains(prevChar) && fQU->contains(prevChar)) {
+            setAppliedRule(pos, "LB 19");
+            continue;
+        }
+
+
 
         if (fCB->contains(thisChar) || fCB->contains(prevChar)) {
             setAppliedRule(pos, "LB 20  Break around a CB");
@@ -3527,6 +3561,7 @@ RBBILineMonkey::~RBBILineMonkey() {
     delete fVI;
     delete fPi;
     delete fPf;
+    delete feaFWH;
 
     delete fCharBI;
     delete fNumberMatcher;
