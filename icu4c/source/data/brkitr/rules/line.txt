@@ -274,12 +274,17 @@ $LB18Breaks    = [$LB8Breaks $SP];
 
 
 # LB 19
-#         x QU
-$LB18NonBreaks $CM* $QU;
-^$CM+               $QU;
+$LB18NonBreaks $CM* ($QU $CM*)+ [^\p{ea=F}\p{ea=W}\p{ea=H}];
+^$CM+               ($QU $CM*)+ [^\p{ea=F}\p{ea=W}\p{ea=H}];
+[$LB18NonBreaks - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ .;
+^[$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ .;
 
-#         QU  x
-$QU $CM* .;
+^ ($QU $CM*)+ .;
+
+[$QU - \p{Pf}] $CM* .;
+
+$LB18NonBreaks $CM* [$QU - \p{Pi}];
+^$CM+               [$QU - \p{Pi}];
 
 # LB 20
 #        <break>  $CB
