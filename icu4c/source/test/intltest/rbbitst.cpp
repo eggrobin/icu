@@ -3266,40 +3266,67 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
         // LB 19
         // × [QU-\p{Pi}]
         if (fQU->contains(thisChar) && !fPi->contains(thisChar)) {
-            setAppliedRule(pos, "LB 19");
+            setAppliedRule(pos, "LB 19 × [QU-\\p{Pi}]");
             continue;
         }
         // [^\p{ea=F}\p{ea=W}\p{ea=H}] × [\p{Pi}&QU]
         if (!feaFWH->contains(prevChar) && fPi->contains(thisChar) && fQU->contains(thisChar)) {
-            setAppliedRule(pos, "LB 19");
+            setAppliedRule(pos, "LB 19 [^\\p{ea=F}\\p{ea=W}\\p{ea=H}] × [\\p{Pi}&QU]");
             continue;
         }
-        // × [\p{Pi}&QU] [^\p{ea=F}\p{ea=W}\p{ea=H}]
-        if (nextPos < fText->length()) {
-            UChar32 nextChar = fText->char32At(nextPos);
-            if (fPi->contains(thisChar) && fQU->contains(thisChar) && !feaFWH->contains(nextChar)) {
-                setAppliedRule(pos, "LB 19");
+        // × [\p{Pi}&QU] ( [^\p{ea=F}\p{ea=W}\p{ea=H}] | eot )
+        if (fPi->contains(thisChar) && fQU->contains(thisChar)) {
+            if (nextPos < fText->length()) {
+                UChar32 nextChar = fText->char32At(nextPos);
+                if (!feaFWH->contains(nextChar)) {
+                    setAppliedRule(pos, "LB 19 × [\\p{Pi}&QU] [^\\p{ea=F}\\p{ea=W}\\p{ea=H}]");
+                    continue;
+                }
+            } else {
+                setAppliedRule(pos, "LB 19 × [\\p{Pi}&QU] eot");
                 continue;
             }
         }
 
         // [QU-\p{Pf}] ×
         if (fQU->contains(prevChar) && !fPf->contains(prevChar)) {
-            setAppliedRule(pos, "LB 19");
+            setAppliedRule(pos, "LB 19 [QU-\\p{Pf}] ×");
             continue;
         }
         // [\p{Pf}&QU] × [^\p{ea=F}\p{ea=W}\p{ea=H}]
         if (fPf->contains(prevChar) && fQU->contains(prevChar) && !feaFWH->contains(thisChar)) {
-            setAppliedRule(pos, "LB 19");
+            setAppliedRule(pos, "LB 19 [\\p{Pf}&QU] × [^\\p{ea=F}\\p{ea=W}\\p{ea=H}]");
             continue;
         }
-        // [^\p{ea=F}\p{ea=W}\p{ea=H}] [\p{Pf}&QU] ×
-        if (!feaFWH->contains(prevCharX2) && fPf->contains(prevChar) && fQU->contains(prevChar)) {
-            setAppliedRule(pos, "LB 19");
-            continue;
+        // ( sot | [^\p{ea=F}\p{ea=W}\p{ea=H}] ) [\p{Pf}&QU] ×
+        if (fPf->contains(prevChar) && fQU->contains(prevChar)) {
+            if (prevPos == 0) {
+                setAppliedRule(pos, "LB 19 sot [\\p{Pf}&QU] ×");
+                continue;
+            }
+            // prevPosX2 is -1 if there was a break, and prevCharX2 is 0; but the UAX #14 rules can
+            // look through breaks.
+            int breakObliviousPrevPosX2 = fText->moveIndex32(prevPos, -1);
+            while (fCM->contains(fText->char32At(breakObliviousPrevPosX2))) {
+                if (breakObliviousPrevPosX2 == 0) {
+                    break;
+                }
+                int beforeCM = fText->moveIndex32(breakObliviousPrevPosX2, -1);
+                if (fBK->contains(fText->char32At(beforeCM)) ||
+                    fCR->contains(fText->char32At(beforeCM)) ||
+                    fLF->contains(fText->char32At(beforeCM)) ||
+                    fNL->contains(fText->char32At(beforeCM)) ||
+                    fSP->contains(fText->char32At(beforeCM)) ||
+                    fZW->contains(fText->char32At(beforeCM))) {
+                    break;
+                }
+                breakObliviousPrevPosX2 = beforeCM;
+            }
+            if (!feaFWH->contains(fText->char32At(breakObliviousPrevPosX2))) {
+                setAppliedRule(pos, "LB 19 [^\\p{ea=F}\\p{ea=W}\\p{ea=H}] [\\p{Pf}&QU] ×");
+                continue;
+            }
         }
-
-
 
         if (fCB->contains(thisChar) || fCB->contains(prevChar)) {
             setAppliedRule(pos, "LB 20  Break around a CB");
