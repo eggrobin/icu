@@ -274,14 +274,20 @@ $LB18Breaks    = [$LB8Breaks $SP];
 
 
 # LB 19
-$LB18NonBreaks $CM* ($QU $CM*)+ [^\p{ea=F}\p{ea=W}\p{ea=H}];
-^$CM+               ($QU $CM*)+ [^\p{ea=F}\p{ea=W}\p{ea=H}];
-[$LB18NonBreaks - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ .;
-^[$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ .;
+$LB18NonBreaks $CM* ($QU $CM*)+ $QU $CM* [[^$CM] {eof}];
+^$CM+               ($QU $CM*)+ $QU $CM* [[^$CM] {eof}];
+$LB18NonBreaks $CM* ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
+^$CM+               ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
+[$LB18NonBreaks - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
+^[$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
 
-^ ($QU $CM*)+ .;
+^ ($QU $CM*)+ [[^$CM] {eof}];
+# Chaining with LB 14 on SP QU.
+$OP $CM* $SP+ ($QU $CM*)+ [[^$CM] {eof}];
+# Chaining with LB 30a on RI QU.
+$RI $CM* $RI $CM* ($QU $CM*)+ [[^$CM] {eof}];
 
-[$QU - \p{Pf}] $CM* .;
+[$QU - \p{Pf}] $CM* [[^$CM] {eof}];
 
 $LB18NonBreaks $CM* [$QU - \p{Pi}];
 ^$CM+               [$QU - \p{Pi}];
