@@ -2920,9 +2920,23 @@ void RBBILineMonkey::rule9Adjust(int32_t pos, UChar32 *posChar, int32_t *nextPos
     // LB 9 Treat X CM* as if it were x.
     //       No explicit action required.
 
-    // LB 10  Treat any remaining combining mark as AL
+    // LB 10  Treat any remaining combining mark as AL, but preserve its East
+    // Asian Width.
     if (fCM->contains(*posChar)) {
-        *posChar = u'A';
+        switch (u_getIntPropertyValue(*posChar, UCHAR_EAST_ASIAN_WIDTH)) {
+        case U_EA_WIDE:
+            *posChar = u'♈';
+            break;
+        case U_EA_NEUTRAL:
+            *posChar = u'ᴬ';
+            break;
+        case U_EA_AMBIGUOUS:
+            *posChar = u'Ⓐ';
+            break;
+        default:
+            puts("Unexpected ea value for lb=CM");
+            std::terminate();
+        }
     }
 
     // Push the updated nextPos and nextChar back to our caller.
