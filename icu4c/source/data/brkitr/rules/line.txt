@@ -35,7 +35,7 @@ $BK = [:LineBreak =  Mandatory_Break:];
 $B2 = [:LineBreak =  Break_Both:];
 $CB = [:LineBreak =  Contingent_Break:];
 $CJ = [:LineBreak =  Conditional_Japanese_Starter:];
-$CL = [:LineBreak =  Close_Punctuation:];
+$CL = [[:LineBreak =  Close_Punctuation:][\uFE10]];
 # $CM = [:LineBreak =  Combining_Mark:];
 $CP = [:LineBreak =  Close_Parenthesis:];
 $CR = [:LineBreak =  Carriage_Return:];
@@ -49,14 +49,14 @@ $H2 = [:LineBreak =  H2:];
 $H3 = [:LineBreak =  H3:];
 $ID = [:LineBreak =  Ideographic:];
 $IN = [:LineBreak =  Inseperable:];
-$IS = [:LineBreak =  Infix_Numeric:];
+$IS = [[:LineBreak =  Infix_Numeric:] - [\uFE10\uFE13\uFE14]];
 $JL = [:LineBreak =  JL:];
 $JV = [:LineBreak =  JV:];
 $JT = [:LineBreak =  JT:];
 $LF = [:LineBreak =  Line_Feed:];
 $NL = [:LineBreak =  Next_Line:];
 # NS includes CJ for CSS strict line breaking.
-$NS = [[:LineBreak =  Nonstarter:] $CJ];
+$NS = [[:LineBreak =  Nonstarter:] $CJ [\uFE13\uFE14]];
 $NU = [:LineBreak =  Numeric:];
 $OP = [:LineBreak =  Open_Punctuation:];
 $PO = [:LineBreak =  Postfix_Numeric:];
@@ -251,9 +251,10 @@ $SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
 
 #
 # LB 15d Do not break before numeric separators (IS), even after spaces.
+# SP IS QU is handled below as part of LB 19.
 
 [$LB8NonBreaks - $SP] $IS;
-$SP $IS $CM* [$CanFollowIS {eof}];
+$SP $IS $CM* [[$CanFollowIS {eof}] - $QU];
 $SP $IS $CM* $ZWJ [^$CM $NU];
 
 $CAN_CM $CM*  $IS;
@@ -295,10 +296,15 @@ $SP [$IS] $CM* ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
 # Chaining with LB 30a on RI QU.
 $RI $CM* $RI $CM* ($QU $CM*)+ [[^$CM] {eof}];
 
-[$QU - \p{Pf}] $CM* [[^$CM] {eof}];
-
 $LB18NonBreaks $CM* [$QU - \p{Pi}];
 ^$CM+               [$QU - \p{Pi}];
+
+# Chaining with LB 15d on IS QU.
+$SP $IS $CM* [$QU - \p{Pi}];
+
+$QU $CM* .;
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [\p{Pf} & $QU]           / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [\p{Pf} & $QU] $CM* $CMX / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
 
 # LB 20
 #        <break>  $CB
