@@ -35,7 +35,7 @@ $BK = [:LineBreak =  Mandatory_Break:];
 $B2 = [:LineBreak =  Break_Both:];
 $CB = [:LineBreak =  Contingent_Break:];
 $CJ = [:LineBreak =  Conditional_Japanese_Starter:];
-$CL = [[:LineBreak =  Close_Punctuation:][\uFE10]];
+$CL = [[:LineBreak =  Close_Punctuation:]];
 # $CM = [:LineBreak =  Combining_Mark:];
 $CP = [:LineBreak =  Close_Parenthesis:];
 $CR = [:LineBreak =  Carriage_Return:];
@@ -49,14 +49,14 @@ $H2 = [:LineBreak =  H2:];
 $H3 = [:LineBreak =  H3:];
 $ID = [:LineBreak =  Ideographic:];
 $IN = [:LineBreak =  Inseperable:];
-$IS = [[:LineBreak =  Infix_Numeric:] - [\uFE10\uFE13\uFE14]];
+$IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
 $JV = [:LineBreak =  JV:];
 $JT = [:LineBreak =  JT:];
 $LF = [:LineBreak =  Line_Feed:];
 $NL = [:LineBreak =  Next_Line:];
 # NS includes CJ for CSS strict line breaking.
-$NS = [[:LineBreak =  Nonstarter:] $CJ [\uFE13\uFE14]];
+$NS = [[:LineBreak =  Nonstarter:] $CJ];
 $NU = [:LineBreak =  Numeric:];
 $OP = [:LineBreak =  Open_Punctuation:];
 $PO = [:LineBreak =  Postfix_Numeric:];
@@ -254,7 +254,7 @@ $SP $IS $CM* $CMX / [^ $CanFollowIS $NU $CM];
 # SP IS QU is handled below as part of LB 19.
 
 [$LB8NonBreaks - $SP] $IS;
-$SP $IS $CM* [[$CanFollowIS {eof}] - $QU];
+$SP $IS $CM* [$CanFollowIS {eof}];
 $SP $IS $CM* $ZWJ [^$CM $NU];
 
 $CAN_CM $CM*  $IS;
@@ -275,36 +275,23 @@ $LB18Breaks    = [$LB8Breaks $SP];
 
 
 # LB 19
-$LB18NonBreaks $CM* ($QU $CM*)+ $QU $CM* [[^$CM] {eof}];
-^$CM+               ($QU $CM*)+ $QU $CM* [[^$CM] {eof}];
-$LB18NonBreaks $CM* ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
-^$CM+               ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
-[$LB18NonBreaks - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
-^[$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
+$LB18NonBreaks $CM* $QU;
+^$CM+               $QU;
 
-$LB18NonBreaks $CM* ($QU $CM*)+ ([\p{Pi} & $QU] $CM* $SP*)+ .;
-^$CM+               ($QU $CM*)+ ([\p{Pi} & $QU] $CM* $SP*)+ $SP $CM+ $AL_FOLLOW?;
-
-^ ($QU $CM*)+ [[^$CM] {eof}];
-# Chaining with LB 14 on SP QU.
-$OP $CM* $SP+ ($QU $CM*)+ [[^$CM] {eof}];
-# Chaining with LB 14 on CM-as-AL QU.
-$OP $CM* $SP+ [$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
-# Chaining with LB 15d on IS QU.
-$SP [$IS - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
-$SP [$IS] $CM* ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
-# Chaining with LB 30a on RI QU.
-$RI $CM* $RI $CM* ($QU $CM*)+ [[^$CM] {eof}];
-
-$LB18NonBreaks $CM* [$QU - \p{Pi}];
-^$CM+               [$QU - \p{Pi}];
-
-# Chaining with LB 15d on IS QU.
-$SP $IS $CM* [$QU - \p{Pi}];
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL]]           / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL]] $CM* $CMX / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+^[$CM & [\p{ea=F}\p{ea=W}\p{ea=H}]]                    / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+^[$CM & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX          / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 
 $QU $CM* .;
 [$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [\p{Pf} & $QU]           / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
 [$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [\p{Pf} & $QU] $CM* $CMX / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
+
+$SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]]           / [$QU & \p{Pi}] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+$SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX / [$QU & \p{Pi}] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+$SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [$QU & \p{Pf}]           / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
+$SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [$QU & \p{Pf}] $CM* $CMX / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
+
 
 # LB 20
 #        <break>  $CB
