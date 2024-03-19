@@ -278,8 +278,8 @@ $LB18Breaks    = [$LB8Breaks $SP];
 $LB18NonBreaks $CM* $QU;
 ^$CM+               $QU;
 
-[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL]]           / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
-[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL]] $CM* $CMX / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL $BA]]           / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+[$LB18NonBreaks & [\p{ea=F}\p{ea=W}\p{ea=H}] - [$OP $GL $BA]] $CM* $CMX / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 ^[$CM & [\p{ea=F}\p{ea=W}\p{ea=H}]]                    / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 ^[$CM & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX          / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 
@@ -294,12 +294,17 @@ $SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX / [$QU & \p{Pi}] $CM* [ [\p{ea=
 $SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [$QU & \p{Pf}]           / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
 $SP [$IS & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* [$QU & \p{Pf}] $CM* $CMX / [ [\p{ea=F}\p{ea=W}\p{ea=H}] - [$NS $BA $EX $CL $IN $IS $GL $CM]];
 
+^$CM*           [$BA & [\p{ea=F}\p{ea=W}\p{ea=H}]]           / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+^$CM*           [$BA & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 
 # LB 20
 #        <break>  $CB
 #        $CB   <break>
 #
 $LB20NonBreaks = [$LB18NonBreaks - $CB];
+
+[$LB20NonBreaks - $HL] $CM* [$BA & [\p{ea=F}\p{ea=W}\p{ea=H}]]           / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
+[$LB20NonBreaks - $HL] $CM* [$BA & [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* $CMX / [\p{Pi} & $QU] $CM* [ [\p{ea=F}\p{ea=W}\p{ea=H}] - $CM];
 
 # LB 20.09    Don't break between Hyphens and Letters when there is a break preceding the hyphen.
 #             Originally added as a Finnish tailoring, now promoted to default ICU behavior.
