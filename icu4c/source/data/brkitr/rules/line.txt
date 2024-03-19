@@ -289,6 +289,9 @@ $LB18NonBreaks $CM* ($QU $CM*)+ ([\p{Pi} & $QU] $CM* $SP*)+ .;
 $OP $CM* $SP+ ($QU $CM*)+ [[^$CM] {eof}];
 # Chaining with LB 14 on CM-as-AL QU.
 $OP $CM* $SP+ [$CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
+# Chaining with LB 15d on IS QU.
+$SP [$IS - [\p{ea=F}\p{ea=W}\p{ea=H}]] $CM* ($QU $CM*)+ [[^$CM] {eof}];
+$SP [$IS] $CM* ($QU $CM*)+ [[^$CM \p{ea=F}\p{ea=W}\p{ea=H}] {eof}];
 # Chaining with LB 30a on RI QU.
 $RI $CM* $RI $CM* ($QU $CM*)+ [[^$CM] {eof}];
 
