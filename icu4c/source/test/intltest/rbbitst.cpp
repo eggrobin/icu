@@ -2948,7 +2948,6 @@ void RBBILineMonkey::rule9Adjust(int32_t pos, UChar32 *posChar, int32_t *nextPos
 
 
 int32_t RBBILineMonkey::next(int32_t startPos) {
-    UErrorCode status = U_ZERO_ERROR;
     int32_t    pos;       //  Index of the char following a potential break position
     UChar32    thisChar;  //  Character at above position "pos"
 
@@ -3418,7 +3417,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
 
         bool continueToNextPosition = false;
         // LB 25.
-        for (const auto [left, right] : {
+        for (const auto& [left, right] : {
                  std::pair{fCL, fPO}, // 1. NU (SY | IS)* CL × PO
                  std::pair{fCP, fPO}, // 2. NU (SY | IS)* CP × PO
                  std::pair{fCL, fPR}, // 3. NU (SY | IS)* CL × PR
@@ -3519,7 +3518,7 @@ int32_t RBBILineMonkey::next(int32_t startPos) {
                 }
             }
         }
-        for (const auto [left, right] : {
+        for (const auto& [left, right] : {
                  std::pair{fPO, fNU}, // 8. PO × NU
                  std::pair{fPR, fNU}, // 10. PR × NU
                  std::pair{fHY, fNU}, // 11. HY × NU
@@ -4370,7 +4369,7 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
             // If test is running in an infinite loop, display a periodic tic so
             //   we can tell that it is making progress.
             constexpr std::array<std::string_view, 5> monkeys{"🙈", "🙉", "🙊", "🐵", "🐒"};
-            fprintf(stderr, monkeys[m_seed % monkeys.size()].data());
+            fprintf(stderr, "%s", monkeys[m_seed % monkeys.size()].data());
             if (loopCount % 1'000'000 == 0) {
                 fprintf(stderr, "\nTested %d million random strings with %d errors…\n",
                         loopCount / 1'000'000, getErrors());
