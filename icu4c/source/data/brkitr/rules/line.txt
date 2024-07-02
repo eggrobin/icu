@@ -122,7 +122,7 @@ $CANT_CM = [ $SP $BK $CR $LF $NL $ZW $CM];       # Bases that can't take CMs
 # AL_FOLLOW  set of chars that can unconditionally follow an AL
 #            Needed in rules where stand-alone $CM s are treated as AL.
 #
-$AL_FOLLOW      = [$BK $CR $LF $NL $ZW $SP $CL $CP $EX $HL $IS $SY $WJ $GL $OP30 $QU $BA $HY $NS $IN $NU $PR $PO $ALPlus];
+$AL_FOLLOW      = [$BK $CR $LF $NL $ZW $SP $CL $CP $EX $HL $IS $SY $WJ $GL $OP30 [$QU - \p{Pi}] $BA $HY $NS $IN $NU $PR $PO $ALPlus];
 
 
 #
@@ -301,6 +301,7 @@ $LB18NonBreaks $CM* $QU $CM* [[^ \p{ea=F}\p{ea=W}\p{ea=H} $CM] {eof}];
 # In the rules below, the expression
 #   ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?)
 # covers chaining on LB15a.
+# TODO(egg): In addition, it can be chained into from LB15a followed by a CM, and in particular an LB19a-LB15a chain is possible.
 
 # Note: all lb=QU are outside [\p{ea=F}\p{ea=W}\p{ea=H}]. This takes
 # care of the pure self-chaining of LB19a.
@@ -312,7 +313,7 @@ $LB18NonBreaks $CM* $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $
 ^$CM+               $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?);
 ^                   $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?);
 
-# Chaining on Pf QU with LB 15b:
+# Chaining on Pf QU from LB 15b:
 $LB8NonBreaks [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
 $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
 ^$CM+         [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
@@ -332,6 +333,11 @@ $RI $CM* $RI $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ 
 # Chaining on IS QU from LB15d:
 $SP $IS $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
 
+# Non-breaking SP from LB14 followed by CM:
+$OP $CM* $SP+ [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$OP $CM* $SP+ $CM+ $QU $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+
+
 # LB 20
 #        <break>  $CB
 #        $CB   <break>
@@ -349,6 +355,7 @@ $CB $CM* $ZWJ ($HY | $HH) $CM* $ALPlus;
 # Non-breaking SP from LB14:
 $OP $CM* $SP+ ($HY | $HH) $CM* $ALPlus; 
 # Non-breaking SP from LB15a:
+# TODO(egg): needs to be chained into the LB15as on the tail of a LB19.
 ($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
 ^([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
 # Non-breaking SP from LB15a following LB15b:
