@@ -298,10 +298,14 @@ $LB18NonBreaks $CM* $QU $CM* [[^ \p{ea=F}\p{ea=W}\p{ea=H} $CM] {eof}];
 
 # LB19a can be chained into from a large number of rules, including itself;
 # it can also chain into LB15a on QU Pi.
+# LB15a can chain into LB19a through a CM, in
+#   [\p{Pi} & $QU] SP [CM - [\p{ea=F}\p{ea=W}\p{ea=H}]] QU
+# or
+#   [\p{Pi} & $QU] SP CM QU QU
+# and in particular it is possible to get a LB15a-LB19a tail of arbitrary length.
 # In the rules below, the expression
-#   ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?)
-# covers chaining on LB15a.
-# TODO(egg): In addition, it can be chained into from LB15a followed by a CM, and in particular an LB19a-LB15a chain is possible.
+#   ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+# deals with chaining out of LB19a into LB15a allowing for such a LB15a-LB19a chain (second top-level group), and for a chaining out of the last LB15a into LB20d (last alternative of the third and last top-level group).
 
 # Note: all lb=QU are outside [\p{ea=F}\p{ea=W}\p{ea=H}]. This takes
 # care of the pure self-chaining of LB19a.
@@ -309,34 +313,42 @@ $LB18NonBreaks $CM* $QU $CM* ($QU $CM*)+ .;
 ^$CM+               $QU $CM* ($QU $CM*)+ .;
 ^                   $QU $CM* ($QU $CM*)+ .;
 # Chaining into LB15a:
-$LB18NonBreaks $CM* $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?);
-^$CM+               $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?);
-^                   $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?);
+$LB18NonBreaks $CM* $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+^$CM+               $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+^                   $QU $CM* ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
 
 # Chaining on Pf QU from LB 15b:
-$LB8NonBreaks [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-^$CM+         [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$LB8NonBreaks [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+^$CM+         [\p{Pf} & $QU] $CM* ( ($QU $CM*)+ . | ($QU $CM*)* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 
 # SP is never [$EastAsian], but can be non-breaking, in which case we need to manually chain on SP QU:
 # Non-breaking SP from LB14:
-$OP $CM* $SP+ ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$OP $CM* $SP+ ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 # Non-breaking SP from LB15a:
-($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-^([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+^([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 # Non-breaking SP from LB15a following LB15b:
-$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 # Chaining on RI QU from LB30a:
-$RI $CM* $RI $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$RI $CM* $RI $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 # Chaining on IS QU from LB15d:
-$SP $IS $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
+$SP $IS $CM* ($QU $CM*)+  ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
 
 # Non-breaking SP from LB14 followed by CM:
-$OP $CM* $SP+ [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-$OP $CM* $SP+ $CM+ $QU $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | $SP $CM+ $AL_FOLLOW?) );
-
+$OP $CM* $SP+ [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+$OP $CM* $SP+ $CM+ $QU $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus) );
+# Non-breaking SP from LB15a followed by CM:
+# TODO(egg): Commented out because otherwise genbrk takes an eternity.
+# It is already very slow.
+#($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+#^([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+# Non-breaking SP from LB15a following LB15b, followed by CM:
+#$LB8NonBreaks [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+#$CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
+#^$CM+  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ ($SP+ ( [ $CM - [\p{ea=F}\p{ea=W}\p{ea=H}] ] $CM* ($QU $CM*)* | $CM+ ($QU $CM*)+ ) ([\p{Pi} & $QU] $CM* $SP*)+)* ( . | $SP $CM+ $AL_FOLLOW? | $SP ($HY | $HH) $CM* $ALPlus);
 
 # LB 20
 #        <break>  $CB
@@ -344,9 +356,9 @@ $OP $CM* $SP+ $CM+ $QU $CM* ($QU $CM*)+ ( . | ([\p{Pi} & $QU] $CM* $SP*)+ ( . | 
 #
 $LB20NonBreaks = [$LB18NonBreaks - $CB];
 
-# LB 20.09    Don't break between Hyphens and Letters when there is a break preceding the hyphen.
-#             Originally added as a Finnish tailoring, now promoted to default ICU behavior.
-#             Note: this is not default UAX-14 behaviour. See issue ICU-8151.
+# LB 20a Do not break after a word-initial hyphen.
+#             Originally added as a Finnish tailoring, promoted to default ICU behavior (ICU-8151)
+#             and then to default UAX #14 behaviour (UTC-179-C32).
 #
 ^($HY | $HH) $CM* $ALPlus;
 $GL ($HY | $HH) $CM* $ALPlus; 
@@ -355,7 +367,6 @@ $CB $CM* $ZWJ ($HY | $HH) $CM* $ALPlus;
 # Non-breaking SP from LB14:
 $OP $CM* $SP+ ($HY | $HH) $CM* $ALPlus; 
 # Non-breaking SP from LB15a:
-# TODO(egg): needs to be chained into the LB15as on the tail of a LB19.
 ($OP $CM* $SP+ | [$OP $QU $GL] $CM*) ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
 ^([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $CM* $ALPlus;
 # Non-breaking SP from LB15a following LB15b:
