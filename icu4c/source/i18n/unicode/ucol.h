@@ -1563,7 +1563,8 @@ class Predicate {
 #if defined(__cpp_char8_t)
     /** @internal */
     bool operator()(std::u8string_view lhs, std::u8string_view rhs) const {
-        return match(lhs, rhs);
+        // The explicit conversion to StringPiece lifts the ambiguity with UnicodeString.
+        return match(StringPiece{lhs}, StringPiece{rhs});
     }
 #endif
 
