@@ -2116,7 +2116,7 @@ void CollationTest::TestCollatorMap() {
     // Only UnicodeString allows heterogeneous lookup across encodings:
     ++um[u"a"];
     ++um["b"];
-    // ++um[u8"A"];  // TODO(egg): Should this be legal?
+    ++um[u8"A"];
     ++um["A"];
     assertEquals("u16m.size()", 2, um.size());
     assertEquals(R"(u16m["a"])", 2, um[u"a"]);
