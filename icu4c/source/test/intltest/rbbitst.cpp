@@ -3214,12 +3214,16 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
         if (name == std::string_view("line")) {
             LazyLineBreakIterator::Context<char16_t> context(testText.getBuffer(), (unsigned)testText.length(), 0u, 0u);
             for (unsigned i = 0; i <= testText.length();) {
-                chromiumFastBreaks.push_back(
-                  context.ShouldBreakFast(false));
+                context.Fetch(testText.getBuffer(), (unsigned)testText.length(), i);
+                chromiumFastBreaks.push_back(i==0?FastBreakResult::kCanBreak:context.ShouldBreakFast(false));
               followingBreaks[breakPos] = 1;
               lastBreakPos = breakPos;
+              if (chromiumFastBreaks.back() != FastBreakResult::kUnknown) {
+                  std::printf("U+%04X U+%04X (%s) U+%04X\n", (int)context.last_last_ch, (int)context.last.ch,
+                              chromiumFastBreaks.back() == FastBreakResult::kCanBreak ? "|" : ".",
+                              (int)context.current.ch);
+              }
               context.Advance(i);
-              context.Fetch(testText.getBuffer(), (unsigned)testText.length(), i);
           }
         }
 
