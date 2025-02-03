@@ -58,6 +58,8 @@
 #include "uvector.h"
 #include "uvectr32.h"
 
+#include "chrome_lb.h"
+
 
 #if !UCONFIG_NO_FILTERED_BREAK_ITERATION
 #include "unicode/filteredbrk.h"
@@ -3206,6 +3208,21 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
             lastBreakPos = breakPos;
         }
 
+        // Find the break positions using the following() function.
+        // printf(".");
+        std::vector<FastBreakResult> chromiumFastBreaks;
+        if (name == std::string_view("line")) {
+            LazyLineBreakIterator::Context<char16_t> context(testText.getBuffer(), (unsigned)testText.length(), 0u, 0u);
+            for (unsigned i = 0; i <= testText.length();) {
+                chromiumFastBreaks.push_back(
+                  context.ShouldBreakFast(false));
+              followingBreaks[breakPos] = 1;
+              lastBreakPos = breakPos;
+              context.Advance(i);
+              context.Fetch(testText.getBuffer(), (unsigned)testText.length(), i);
+          }
+        }
+
         // Find the break positions using the preceding() function.
         memset(precedingBreaks, 0, sizeof(precedingBreaks));
         lastBreakPos = testText.length();
@@ -3260,7 +3277,13 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
             } else if (precedingBreaks[i] != expectedBreaks[i]) {
                 errorType = "preceding()";
                 currentBreakData = precedingBreaks;
+            } else if (name == std::string_view("line")) {
+                if (chromiumFastBreaks[i] != FastBreakResult::kUnknown && 
+                ((char)chromiumFastBreaks[i] != expectedBreaks[i]))
+                errorType = "chromium fast";
+                currentBreakData = (const char *)chromiumFastBreaks.data();
             }
+
 
             if (errorType != nullptr) {
                 // Format a range of the test text that includes the failure as
@@ -3335,7 +3358,10 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
                              currentLineFlag.c_str(),
                              ci,
                              expectedBreaks[ci] == 0 ? "." : "|",  // Reference break
-                             currentBreakData[ci] == 0 ? "." : "|",  // Actual break
+                                 currentBreakData[ci] == 0   ? "."
+                                 : currentBreakData[ci] == 1 ? "|"
+                                 : currentBreakData[ci] == 2 ? "?"
+                                                             : "E", // Actual break
                              hexCodePoint,
                              classNameSize,
                              mk.classNameFromCodepoint(c).c_str(),

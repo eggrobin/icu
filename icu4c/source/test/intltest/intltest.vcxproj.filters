@@ -972,5 +972,8 @@
     <ClInclude Include="localebuildertest.h">
       <Filter>locales &amp; resources</Filter>
     </ClInclude>
+    <ClInclude Include="chrome_lb.h">
+      <Filter>break iteration</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
