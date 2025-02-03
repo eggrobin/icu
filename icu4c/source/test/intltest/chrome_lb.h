@@ -40,14 +40,6 @@ class LazyLineBreakIterator {
 
 enum class FastBreakResult : uint8_t { kNoBreak, kCanBreak, kUnknown };
 
-class RuntimeEnabledFeatures {
-public: 
-static constexpr bool BreakIteratorHyphenMinusEnabled() {
-return true;
-}
-};
-
-
 namespace {
 
 template <typename CharType> inline bool IsASCIIAlpha(CharType c) {
@@ -305,94 +297,99 @@ inline uint8_t GetFastLineBreak(T ch1, T ch2) {
 
 }  // namespace
 
-// From chromium text_break_iterator.cc @9596b53
+// From chromium text_break_iterator.cc @4fa6f68256658ed82b5d407d32c1d8b5fb1d65a8
 
-template <typename CharacterType> struct LazyLineBreakIterator::Context {
+template <typename CharacterType>
+struct LazyLineBreakIterator::Context {
+  STACK_ALLOCATED();
+
+ public:
+  struct ContextChar {
     STACK_ALLOCATED();
 
-  public:
-    struct ContextChar {
-        STACK_ALLOCATED();
+   public:
+    ContextChar() = default;
+    explicit ContextChar(UChar ch) : ch(ch), is_space(IsBreakableSpace(ch)) {}
 
-      public:
-        ContextChar() = default;
-        explicit ContextChar(UChar ch) : ch(ch), is_space(IsBreakableSpace(ch)) {}
+    UChar ch = 0;
+    bool is_space = false;
+  };
 
-        UChar ch = 0;
-        bool is_space = false;
-    };
+  Context(const CharacterType* str,
+          unsigned len,
+          unsigned start_offset,
+          unsigned index) {
+    DCHECK_GE(index, start_offset);
+    CHECK_LE(index, len);
+    if (index > start_offset) {
+      last = ContextChar(str[index - 1]);
+      if (index > start_offset + 1) {
+        last_last_ch = str[index - 2];
+      }
+    }
+  }
 
-    Context(const CharacterType *str, unsigned len, unsigned start_offset, unsigned index) {
-        DCHECK_GE(index, start_offset);
-        CHECK_LE(index, len);
-        if (index > start_offset) {
-            last = ContextChar(str[index - 1]);
-            if (index > start_offset + 1) {
-                last_last_ch = str[index - 2];
-            }
-        }
+  bool Fetch(const CharacterType* str, unsigned len, unsigned index) {
+    if (index >= len) [[unlikely]] {
+      return false;
+    }
+    current = ContextChar(str[index]);
+    return true;
+  }
+
+  void Advance(unsigned& index) {
+    ++index;
+    last_last_ch = last.ch;
+    last = current;
+  }
+
+  FastBreakResult ShouldBreakFast(bool disable_soft_hyphen) const {
+    const UChar last_ch = last.ch;
+    const UChar ch = current.ch;
+    if (last_ch < kFastLineBreakMinChar || ch < kFastLineBreakMinChar)
+        [[unlikely]] {
+      return FastBreakResult::kNoBreak;
     }
 
-    bool Fetch(const CharacterType *str, unsigned len, unsigned index) {
-        if (index >= len) [[unlikely]] {
-            return false;
+    // U+002D HYPHEN-MINUS may depend on the context.
+    static_assert('-' >= kFastLineBreakMinChar);
+    if (last_ch == '-') [[unlikely]] {
+      if (ch <= 0x7F) {
+        // Up to U+007F is fast-breakable. See `LineBreakData::FillAscii()`.
+        if (IsASCIIDigit(ch)) {
+          // Don't allow line breaking between '-' and a digit if the '-' may
+          // mean a minus sign in the context, while allow breaking in
+          // 'ABCD-1234' and '1234-5678' which may be in long URLs.
+          return IsASCIIAlphanumeric(last_last_ch) ? FastBreakResult::kCanBreak
+                                                   : FastBreakResult::kNoBreak;
         }
-        current = ContextChar(str[index]);
-        return true;
-    }
-
-    void Advance(unsigned &index) {
-        ++index;
-        last_last_ch = last.ch;
-        last = current;
-    }
-
-    FastBreakResult ShouldBreakFast(bool disable_soft_hyphen) const {
-        const UChar last_ch = last.ch;
-        const UChar ch = current.ch;
-        if (last_ch < kFastLineBreakMinChar || ch < kFastLineBreakMinChar) [[unlikely]] {
-            return FastBreakResult::kNoBreak;
-        }
-
-        // U+002D HYPHEN-MINUS may depend on the context.
-        static_assert('-' >= kFastLineBreakMinChar);
-        if (last_ch == '-') [[unlikely]] {
-            if (ch <= 0x7F) {
-                // Up to U+007F is fast-breakable. See `LineBreakData::FillAscii()`.
-                if (IsASCIIDigit(ch)) {
-                    // Don't allow line breaking between '-' and a digit if the '-' may
-                    // mean a minus sign in the context, while allow breaking in
-                    // 'ABCD-1234' and '1234-5678' which may be in long URLs.
-                    return IsASCIIAlphanumeric(last_last_ch) ? FastBreakResult::kCanBreak
-                                                             : FastBreakResult::kNoBreak;
-                }
-            } else if (RuntimeEnabledFeatures::BreakIteratorHyphenMinusEnabled()) {
-                // Defer to the Unicode algorithm to take more context into account.
-                return FastBreakResult::kUnknown;
-            }
-        }
-
-        // If both characters are in the fast line break table, use it for enhanced
-        // speed. For ASCII characters, it is also for compatibility. The table is
-        // generated at the build time, see the `LineBreakData` class.
-        if (last_ch <= kFastLineBreakMaxChar && ch <= kFastLineBreakMaxChar) {
-            if (!GetFastLineBreak(last_ch, ch)) {
-                return FastBreakResult::kNoBreak;
-            }
-            static_assert(kSoftHyphenCharacter <= kFastLineBreakMaxChar);
-            if (disable_soft_hyphen && last_ch == kSoftHyphenCharacter) [[unlikely]] {
-                return FastBreakResult::kNoBreak;
-            }
-            return FastBreakResult::kCanBreak;
-        }
-
-        // Otherwise defer to the Unicode algorithm.
-        static_assert(kNoBreakSpaceCharacter <= kFastLineBreakMaxChar,
-                      "Include NBSP for the performance.");
+      } else {
+        // Defer to the Unicode algorithm to take more context into account.
         return FastBreakResult::kUnknown;
+      }
     }
 
-    ContextChar current;
-    ContextChar last;
-    CharacterType last_last_ch = 0;
+    // If both characters are in the fast line break table, use it for enhanced
+    // speed. For ASCII characters, it is also for compatibility. The table is
+    // generated at the build time, see the `LineBreakData` class.
+    if (last_ch <= kFastLineBreakMaxChar && ch <= kFastLineBreakMaxChar) {
+      if (!GetFastLineBreak(last_ch, ch)) {
+        return FastBreakResult::kNoBreak;
+      }
+      static_assert(kSoftHyphenCharacter <= kFastLineBreakMaxChar);
+      if (disable_soft_hyphen && last_ch == kSoftHyphenCharacter) [[unlikely]] {
+        return FastBreakResult::kNoBreak;
+      }
+      return FastBreakResult::kCanBreak;
+    }
+
+    // Otherwise defer to the Unicode algorithm.
+    static_assert(kNoBreakSpaceCharacter <= kFastLineBreakMaxChar,
+                  "Include NBSP for the performance.");
+    return FastBreakResult::kUnknown;
+  }
+
+  ContextChar current;
+  ContextChar last;
+  CharacterType last_last_ch = 0;
 };
