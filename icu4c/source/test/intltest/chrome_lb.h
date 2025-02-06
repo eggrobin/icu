@@ -360,13 +360,11 @@ struct LazyLineBreakIterator::Context {
     // U+002D HYPHEN-MINUS may depend on the context.
     static_assert('-' >= kFastLineBreakMinChar);
     if (last_ch == ' ') {
-        if (last_last_ch > 0x7F) {
-          // We could bump that 0x7F to kFastLineBreakMaxChar by handling ¡ and
-          // ¿ (lb=OP) in the else if branch, except for « which requires
-          // additional context before:
+        if (last_last_ch > kFastLineBreakMaxChar || last_last_ch == 0xBB) {
+          // U+00BB « (lb=QU, gc=Pi) requires additional context before:
           // https://www.unicode.org/reports/tr14/#LB15a.
           return FastBreakResult::kUnknown;
-        } else if (last_last_ch == '(' || last_last_ch == '[' || last_last_ch == '{') {
+        } else if (last_last_ch == '(' || last_last_ch == '[' || last_last_ch == '{' || last_last_ch == '¡' || last_last_ch == '¿') {
           // https://www.unicode.org/reports/tr14/#LB14 OP SP* ×.
           return FastBreakResult::kNoBreak;
         }
