@@ -359,7 +359,18 @@ struct LazyLineBreakIterator::Context {
 
     // U+002D HYPHEN-MINUS may depend on the context.
     static_assert('-' >= kFastLineBreakMinChar);
-    if (last_ch == '-') [[unlikely]] {
+    if (last_ch == ' ') {
+        if (last_last_ch > 0x7F) {
+          // We could bump that 0x7F to kFastLineBreakMaxChar by handling ¡ and
+          // ¿ (lb=OP) in the else if branch, except for « which requires
+          // additional context before:
+          // https://www.unicode.org/reports/tr14/#LB15a.
+          return FastBreakResult::kUnknown;
+        } else if (last_last_ch == '(' || last_last_ch == '[' || last_last_ch == '{') {
+          // https://www.unicode.org/reports/tr14/#LB14 OP SP* ×.
+          return FastBreakResult::kNoBreak;
+        }
+    } else if (last_ch == '-') [[unlikely]] {
       if (ch <= 0x7F && last_last_ch <= kFastLineBreakMaxChar) {
         // Up to U+007F is fast-breakable. See `LineBreakData::FillAscii()`.
         if (IsASCIIDigit(ch)) {

@@ -2236,9 +2236,10 @@ RBBILineMonkey::RBBILineMonkey() :
 
     // Chromium overrides.  Some questionable, but not today.
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr ["] × [\{])", uR"([!])", u'×', uR"([\{])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr [\-] × [\$])", uR"([\-])", u'×', uR"([\$])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr [)] × [\$%])", uR"([)])", u'×', uR"([\$%])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr [!}|] × [0-9%])", uR"([!}|])", u'×', uR"([0-9%])"));
-    rules.push_back(std::make_unique<RegexRule>(uR"(Cr / C most ASCII)", uR"([/])", u'×', uR"([0-9a-zA-Z%+\[\{])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr / C most ASCII)", uR"([/])", u'×', uR"([0-9a-zA-Z%+\[\{~])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr - ÷ ")", uR"([\-])", u'÷', uR"(["])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr ? ÷ -)", uR"([?])", u'÷', uR"([\-])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr - ÷ -)", uR"([\-])", u'÷', uR"([\-])"));
