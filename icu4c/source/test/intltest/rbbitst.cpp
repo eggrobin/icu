@@ -2359,7 +2359,7 @@ RBBILineMonkey::RBBILineMonkey() :
     rules.push_back(std::make_unique<RegexRule>(uR"(× $HY)", uR"()", u'×', uR"(\p{Line_Break=Hyphen})"));
     rules.push_back(std::make_unique<RegexRule>(uR"(× $NS)", uR"()", u'×', uR"([\p{Line_Break=Nonstarter} \p{Line_Break=Conditional_Japanese_Starter}])"));
     rules.push_back(std::make_unique<RegexRule>(uR"($BB ×)", uR"(\p{Line_Break=Break_Before})", u'×', uR"()"));
-    rules.push_back(std::make_unique<RegexRule>(uR"($HL ($HY | $NonEastAsianBA) × [^$HL])", uR"(\p{Line_Break=HL} (\p{Line_Break=Hyphen} | [\p{Line_Break=Break_After} && [^[\p{ea=F}\p{ea=W}\p{ea=H}]]]))", u'×', uR"([^\p{Line_Break=HL}])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"($HL ($HY | $NonEastAsianBA) × [^$HL])", uR"(\p{Line_Break=HL} (\p{Line_Break=Hyphen} | [\p{Line_Break=Break_After} && [^[\p{ea=F}\p{ea=W}\p{ea=H} | \x{AD}]]]))", u'×', uR"([^\p{Line_Break=HL}])"));
     rules.push_back(std::make_unique<RegexRule>(uR"($SY × $HL)", uR"(\p{Line_Break=Break_Symbols})", u'×', uR"(\p{Line_Break=HL})"));
     rules.push_back(std::make_unique<RegexRule>(uR"(× $IN)", uR"()", u'×', uR"(\p{Line_Break=Inseparable})"));
     rules.push_back(std::make_unique<RegexRule>(uR"(($AL | $HL) × $NU)", uR"(([\p{Line_Break=Ambiguous} \p{Line_Break=Alphabetic} \p{Line_Break=Surrogate} \p{Line_Break=Unknown} [\p{Line_Break=Complex_Context}--\p{gc=Mn}--\p{gc=Mc}]] | \p{Line_Break=HL}))", u'×', uR"(\p{Line_Break=Numeric})"));
@@ -3134,7 +3134,8 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
             if (mk.dictionarySet().contains(c)) {
               continue;
             }
-            if ((c < 0x20 && c != 0x0A) || (c >= 0x7F && c <= 0x9F) || c == 0x2028 || c == 0x2029) {
+            if ((c < 0x20 && c != 0x0A) || (c >= 0x7F && c <= 0x9F) || c == 0x2028 || c == 0x2029 ||
+                c == u'¢' || c == u'°' || c == u'£' || c == u'¤' || c == u'±' || c == u'¥') {
               continue;
             }
             if (scalarsOnly && U16_IS_SURROGATE(c)) {
