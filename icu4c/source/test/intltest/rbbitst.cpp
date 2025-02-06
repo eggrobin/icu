@@ -2234,7 +2234,13 @@ RBBILineMonkey::RBBILineMonkey() :
     // The generated rules use the same (?!.).
     rules.push_back(std::make_unique<RegexRule>(uR"(LB3 ÷ eot)", uR"()", u'÷', uR"((?!.))"));
 
-    // Chromium override.  Questionable, but not today.
+    // Chromium overrides.  Some questionable, but not today.
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr ["] × [\{])", uR"([!])", u'×', uR"([\{])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr [)] × [\$%])", uR"([)])", u'×', uR"([\$%])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr [!}|] × [0-9%])", uR"([!}|])", u'×', uR"([0-9%])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr / C most ASCII)", uR"([/])", u'×', uR"([0-9a-zA-Z%+\[\{])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr - ÷ ")", uR"([\-])", u'÷', uR"(["])"));
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr ? ÷ -)", uR"([?])", u'÷', uR"([\-])"));
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr - ÷ -)", uR"([\-])", u'÷', uR"([\-])"));
 
     // --- NOLI ME TANGERE ---
@@ -3106,7 +3112,17 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
         testText.truncate(0);
         for (i=0; i<TESTSTRINGLEN; i++) {
             const int32_t aClassNum = std::uniform_int_distribution<>(0, numCharClasses - 1)(randomNumberGenerator);
-            const UnicodeSet& classSet = chClasses[aClassNum];
+            UnicodeSet classSet = chClasses[aClassNum];
+            const bool latin_1 = std::bernoulli_distribution()(randomNumberGenerator);
+            if (latin_1) {
+                classSet.retainAll(UnicodeSet(0x00, 0xFF));
+            } else {
+                classSet.removeAll(UnicodeSet(0x00, 0xFF));
+            }
+            if (classSet.isEmpty()) {
+                continue;
+            }
+
             const int32_t charIdx = std::uniform_int_distribution<>(0, classSet.size() - 1)(randomNumberGenerator);
             UChar32   c = classSet.charAt(charIdx);
             if (c < 0) {   // TODO:  deal with sets containing strings.
@@ -3116,7 +3132,7 @@ void RBBITest::RunMonkey(BreakIterator *bi, RBBIMonkeyKind &mk, const char *name
             if (mk.dictionarySet().contains(c)) {
               continue;
             }
-            if ((c < 0x20 && c != 0x0A) || c == 0x85 || c == 0x2028 || c == 0x2029) {
+            if ((c < 0x20 && c != 0x0A) || (c >= 0x7F && c <= 0x9F) || c == 0x2028 || c == 0x2029) {
               continue;
             }
             if (scalarsOnly && U16_IS_SURROGATE(c)) {
