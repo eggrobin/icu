@@ -360,11 +360,14 @@ struct LazyLineBreakIterator::Context {
     // U+002D HYPHEN-MINUS may depend on the context.
     static_assert('-' >= kFastLineBreakMinChar);
     if (last_ch == ' ') {
-        if (last_last_ch > kFastLineBreakMaxChar || last_last_ch == 0xAB || ch == 0xBB) {
+        if (last_last_ch > kFastLineBreakMaxChar || last_last_ch == 0xAB || ch == 0xBB || ch == ',' ||
+            ch == '.' || ch == ':' || ch == ';') {
           // U+00AB « (lb=QU, gc=Pi) requires additional context before:
           // https://www.unicode.org/reports/tr14/#LB15a.
           // U+00BB » (lb=QU, gc=Pf) requires additional context after:
           // https://www.unicode.org/reports/tr14/#LB15b.
+          // lb=IS requires additional context after:
+          // https://www.unicode.org/reports/tr14/#LB15c.
           return FastBreakResult::kUnknown;
         } else if (last_last_ch == '(' || last_last_ch == '[' || last_last_ch == '{' || last_last_ch == u'¡' || last_last_ch == u'¿') {
           // https://www.unicode.org/reports/tr14/#LB14 OP SP* ×.
