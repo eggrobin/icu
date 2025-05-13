@@ -341,6 +341,10 @@ struct LazyLineBreakIterator::Context {
 
   void Advance(unsigned& index) {
     ++index;
+    if (current.ch == 0x20 && last.ch == 0x20) {
+      // Absorb runs of spaces so that we treat X SP SP+ Y like X SP Y.
+      return;
+    }
     last_last_ch = last.ch;
     last = current;
   }
