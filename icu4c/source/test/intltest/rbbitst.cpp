@@ -2277,6 +2277,10 @@ RBBILineMonkey::RBBILineMonkey() :
     // Chromium alphanumeric-numeric break.  Consider upstreaming?
     rules.push_back(std::make_unique<RegexRule>(uR"(Cr [A-Za-z0-9] - ÷ [0-9])", uR"([A-Za-z0-9]-)", u'÷', uR"([0-9])"));
 
+    // Test case bug14007-1.
+    rules.push_back(std::make_unique<RegexRule>(uR"(Cr ! SP+ ÷ !)", uR"(!\p{lb=SP}+)", u'÷',
+                                                uR"(!)"));
+
     // Not supporting PO × OP NU and PR × OP NU for now.
     rules.push_back(
         std::make_unique<RegexRule>(uR"(Cr PO ÷ OP on Latin-1)", uR"([%°¢])", u'÷', uR"([¡¿(\[\{])"));

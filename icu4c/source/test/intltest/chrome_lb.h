@@ -376,6 +376,9 @@ struct LazyLineBreakIterator::Context {
         } else if (last_last_ch == '(' || last_last_ch == '[' || last_last_ch == '{' || last_last_ch == u'¡' || last_last_ch == u'¿') {
           // https://www.unicode.org/reports/tr14/#LB14 OP SP* ×.
           return FastBreakResult::kNoBreak;
+        } else if (last_last_ch == '!' && ch == '!') {
+            // Break between space-separated exclamation marks used as ASCII art, see bug14007-1.
+            return FastBreakResult::kCanBreak;
         }
     } else if (last_ch == '-') [[unlikely]] {
       if (ch <= 0x7F && last_last_ch <= kFastLineBreakMaxChar) {
