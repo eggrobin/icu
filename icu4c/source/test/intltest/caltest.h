@@ -352,6 +352,7 @@ public: // package
     void Test22730JapaneseOverflow();
     void Test22730CopticOverflow();
     void Test22962ComputeJulianDayOverflow();
+    void Test22962MonthAddOneOverflow();
 
     void Test22750Roll();
 
@@ -362,6 +363,7 @@ public: // package
 
     void TestChineseCalendarComputeMonthStart();
     void Test22633HebrewLargeNegativeDay();
+    void Test23069HebrewHanukkah();
 
     void RunChineseCalendarInTemporalLeapYearTest(Calendar* cal);
     void RunIslamicCalendarInTemporalLeapYearTest(Calendar* cal);

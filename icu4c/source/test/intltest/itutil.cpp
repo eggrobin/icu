@@ -35,6 +35,9 @@
 #include "usettest.h"
 
 extern IntlTest *createBytesTrieTest();
+#if !UCONFIG_NO_COLLATION
+extern IntlTest *createUColHeaderOnlyTest();
+#endif
 extern IntlTest *createUSetHeaderOnlyTest();
 extern IntlTest *createLocaleMatcherTest();
 static IntlTest *createLocalPointerTest();
@@ -48,11 +51,14 @@ extern IntlTest *createPluralMapTest();
 extern IntlTest *createStaticUnicodeSetsTest();
 #endif
 static IntlTest *createUHashTest();
+extern IntlTest *createUTFIteratorTest();
+extern IntlTest *createIntlTestTest();
 
 void IntlTestUtilities::runIndexedTest( int32_t index, UBool exec, const char* &name, char* par )
 {
     if (exec) logln("TestSuite Utilities: ");
     TESTCASE_AUTO_BEGIN;
+    TESTCASE_AUTO_CREATE_CLASS(IntlTestTest);
     TESTCASE_AUTO_CLASS(MultithreadTest);
     TESTCASE_AUTO_CLASS(StringTest);
     TESTCASE_AUTO_CLASS(UnicodeStringTest);
@@ -83,7 +89,11 @@ void IntlTestUtilities::runIndexedTest( int32_t index, UBool exec, const char* &
     TESTCASE_AUTO_CLASS(LocaleBuilderTest);
     TESTCASE_AUTO_CREATE_CLASS(LocaleMatcherTest);
     TESTCASE_AUTO_CREATE_CLASS(UHashTest);
+#if !UCONFIG_NO_COLLATION
+    TESTCASE_AUTO_CREATE_CLASS(UColHeaderOnlyTest);
+#endif
     TESTCASE_AUTO_CREATE_CLASS(USetHeaderOnlyTest);
+    TESTCASE_AUTO_CREATE_CLASS(UTFIteratorTest);
     TESTCASE_AUTO_END;
 }
 

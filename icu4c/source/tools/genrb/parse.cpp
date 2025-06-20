@@ -297,7 +297,7 @@ static char *getInvariantString(ParseState* state, uint32_t *line, struct UStrin
 
     if(!uprv_isInvariantUString(tokenValue->fChars, tokenValue->fLength)) {
         *status = U_INVALID_FORMAT_ERROR;
-        error(*line, "invariant characters required for table keys, binary data, etc.");
+        error((line == nullptr) ? 0 : *line, "invariant characters required for table keys, binary data, etc.");
         return nullptr;
     }
 
@@ -1034,6 +1034,7 @@ writeCollationSpecialPrimariesTOML(const char* outputdir, const char* name, cons
     }
 
     usrc_writeArray(f, "last_primaries = [\n  ", lastPrimaries, 16, 4, "  ", "\n]\n");
+    usrc_writeArray(f, "compressible_bytes = [\n  ", data->compressibleBytes, 1, 256, "  ", "\n]\n");
     fprintf(f, "numeric_primary = 0x%X\n", numericPrimary >> 24);
     fclose(f);
 }

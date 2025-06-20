@@ -249,6 +249,7 @@ void LocaleTest::runIndexedTest( int32_t index, UBool exec, const char* &name, c
     TESTCASE_AUTO(TestCreateUnicodeKeywordSetWithPrivateUse);
     TESTCASE_AUTO(TestGetKeywordValueStdString);
     TESTCASE_AUTO(TestGetUnicodeKeywordValueStdString);
+    TESTCASE_AUTO(TestSetKeywordValueImp);
     TESTCASE_AUTO(TestSetKeywordValue);
     TESTCASE_AUTO(TestSetKeywordValueStringPiece);
     TESTCASE_AUTO(TestSetUnicodeKeywordValueStringPiece);
@@ -2570,8 +2571,8 @@ LocaleTest::TestAddLikelyAndMinimizeSubtags() {
             "dz"
         }, {
             "und_BY",
-            "be_Cyrl_BY",
-            "be"
+            "ru_Cyrl_BY",
+            "ru_BY"
         }, {
             "und_Beng",
             "bn_Beng_BD",
@@ -4372,7 +4373,7 @@ LocaleTest::TestCreateKeywordSet() {
             status);
     status.errIfFailureAndReset("\"%s\"", l.getName());
 
-    assertEquals("set::size()", 2, static_cast<int32_t>(result.size()));
+    assertEquals("set::size()", 2, result.size());
     assertTrue("set::find(\"calendar\")",
                result.find("calendar") != result.end());
     assertTrue("set::find(\"collation\")",
@@ -4391,7 +4392,7 @@ LocaleTest::TestCreateKeywordSetEmpty() {
             status);
     status.errIfFailureAndReset("\"%s\"", l.getName());
 
-    assertEquals("set::size()", 0, static_cast<int32_t>(result.size()));
+    assertEquals("set::size()", 0, result.size());
 }
 
 void
@@ -4427,7 +4428,7 @@ LocaleTest::TestCreateUnicodeKeywordSet() {
             status);
     status.errIfFailureAndReset("\"%s\"", l.getName());
 
-    assertEquals("set::size()", 2, static_cast<int32_t>(result.size()));
+    assertEquals("set::size()", 2, result.size());
     assertTrue("set::find(\"ca\")",
                result.find("ca") != result.end());
     assertTrue("set::find(\"co\")",
@@ -4451,7 +4452,7 @@ LocaleTest::TestCreateUnicodeKeywordSetEmpty() {
             status);
     status.errIfFailureAndReset("\"%s\"", l.getName());
 
-    assertEquals("set::size()", 0, static_cast<int32_t>(result.size()));
+    assertEquals("set::size()", 0, result.size());
 
     LocalPointer<StringEnumeration> se(l.createUnicodeKeywords(status), status);
     assertTrue("createUnicodeKeywords", se.isNull());
@@ -4476,7 +4477,7 @@ LocaleTest::TestCreateUnicodeKeywordSetWithPrivateUse() {
                result.find("x") == result.end());
     assertTrue("getUnicodeKeywords set::find(\"foo\")",
                result.find("foo") == result.end());
-    assertEquals("set::size()", 1, static_cast<int32_t>(result.size()));
+    assertEquals("set::size()", 1, result.size());
 
     LocalPointer<StringEnumeration> se(l.createUnicodeKeywords(status), status);
     status.errIfFailureAndReset("\"%s\" createUnicodeKeywords()", l.getName());
@@ -4512,6 +4513,35 @@ LocaleTest::TestGetUnicodeKeywordValueStdString() {
     std::string result = l.getUnicodeKeywordValue<std::string>(keyword, status);
     status.errIfFailureAndReset("\"%s\"", keyword);
     assertEquals(keyword, expected, result.c_str());
+}
+
+void
+LocaleTest::TestSetKeywordValueImp() {
+    IcuTestErrorCode status(*this, "TestSetKeywordValueImp()");
+
+    {
+        CharString localeID("aa", status);
+        ulocimp_setKeywordValue("bb", "cc", localeID, status);
+        assertEquals("", "aa@bb=cc", localeID.data());
+    }
+
+    {
+        CharString localeID("aa@bb=cc", status);
+        ulocimp_setKeywordValue("bb", "", localeID, status);
+        assertEquals("", "aa", localeID.data());
+    }
+
+    {
+        CharString localeID("aa", status);
+        ulocimp_setKeywordValue("zz", "", localeID, status);
+        assertEquals("", "aa", localeID.data());
+    }
+
+    {
+        CharString localeID("aa@bb=cc", status);
+        ulocimp_setKeywordValue("zz", "", localeID, status);
+        assertEquals("", "aa@bb=cc", localeID.data());
+    }
 }
 
 void
@@ -5921,11 +5951,6 @@ testLikelySubtagsLineFn(void *context,
                     *pErrorCode, u_errorName(*pErrorCode));
         *pErrorCode = U_ZERO_ERROR;
         return;
-    }
-
-    if ((uprv_strcmp(source.c_str(), "und-Latn-RS") == 0 )
-        && THIS->logKnownIssue("ICU-22976", "unexpected likely subtags for und-Latn-RS")) {
-      return;
     }
 
     Locale actualMax(l);

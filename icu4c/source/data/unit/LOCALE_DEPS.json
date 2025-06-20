@@ -3,7 +3,7 @@
 // Generated using tools/cldr/cldr-to-icu/
 
 {
-    "cldrVersion": "47",
+    "cldrVersion": "48",
     "aliases": {
         "ars": "ar_SA",
         "az_AZ": "az_Latn_AZ",
@@ -19,6 +19,7 @@
         "iw": "he",
         "iw_IL": "he_IL",
         "ks_IN": "ks_Arab_IN",
+        "ku_SY": "ku_Latn_SY",
         "kxv_IN": "kxv_Latn_IN",
         "mni_IN": "mni_Beng_IN",
         "mo": "ro",
@@ -134,6 +135,7 @@
         "en_NZ": "en_001",
         "en_PG": "en_001",
         "en_PK": "en_001",
+        "en_PL": "en_150",
         "en_PN": "en_001",
         "en_PT": "en_150",
         "en_PW": "en_001",

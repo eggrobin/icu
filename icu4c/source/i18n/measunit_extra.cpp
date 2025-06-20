@@ -31,7 +31,7 @@
 #include "unicode/ustringtrie.h"
 #include "uresimp.h"
 #include "util.h"
-#include <climits>
+#include <limits.h>
 #include <cstdlib>
 U_NAMESPACE_BEGIN
 
@@ -1269,6 +1269,51 @@ MeasureUnitImpl::extractIndividualUnitsWithIndices(UErrorCode &status) const {
     return result;
 }
 
+int32_t countCharacter(const CharString &str, char c) {
+    int32_t count = 0;
+    for (int32_t i = 0, n = str.length(); i < n; i++) {
+        if (str[i] == c) {
+            count++;
+        }
+    }
+    return count;
+}
+
+/**
+ * Internal function that returns a string of the constants in the correct
+ * format.
+ *
+ * Example:
+ * 1000 --> "-per-1000"
+ * 1000000 --> "-per-1e6"
+ *
+ * NOTE: this function is only used when the constant denominator is greater
+ * than 0.
+ */
+CharString getConstantsString(uint64_t constantDenominator, UErrorCode &status) {
+    U_ASSERT(constantDenominator > 0 && constantDenominator <= LLONG_MAX);
+
+    CharString result;
+    result.appendNumber(constantDenominator, status);
+    if (U_FAILURE(status)) {
+        return result;
+    }
+
+    if (constantDenominator <= 1000) {
+        return result;
+    }
+
+    // Check if the constant is a power of 10.
+    int32_t zeros = countCharacter(result, '0');
+    if (zeros == result.length() - 1 && result[0] == '1') {
+        result.clear();
+        result.append(StringPiece("1e"), status);
+        result.appendNumber(zeros, status);
+    }
+
+    return result;
+}
+
 /**
  * Normalize a MeasureUnitImpl and generate the identifier string in place.
  */
@@ -1277,7 +1322,7 @@ void MeasureUnitImpl::serialize(UErrorCode &status) {
         return;
     }
 
-    if (this->singleUnits.length() == 0) {
+    if (this->singleUnits.length() == 0 && this->constantDenominator == 0) {
         // Dimensionless, constructed by the default constructor.
         return;
     }
@@ -1319,8 +1364,8 @@ void MeasureUnitImpl::serialize(UErrorCode &status) {
                     result.append(StringPiece("-per-"), status);
                 }
 
-                if (this->constantDenominator != 0) {
-                    result.appendNumber(this->constantDenominator, status);
+                if (this->constantDenominator > 0) {
+                    result.append(getConstantsString(this->constantDenominator, status), status);
                     result.append(StringPiece("-"), status);
                     constantDenominatorAppended = true;
                 }
@@ -1333,9 +1378,9 @@ void MeasureUnitImpl::serialize(UErrorCode &status) {
         this->singleUnits[i]->appendNeutralIdentifier(result, status);
     }
 
-    if (!constantDenominatorAppended && this->constantDenominator != 0) {
+    if (!constantDenominatorAppended && this->constantDenominator > 0) {
         result.append(StringPiece("-per-"), status);
-        result.appendNumber(this->constantDenominator, status);
+        result.append(getConstantsString(this->constantDenominator, status), status);
     }
 
     if (U_FAILURE(status)) {
@@ -1452,9 +1497,25 @@ MeasureUnit MeasureUnit::product(const MeasureUnit& other, UErrorCode& status) c
     for (int32_t i = 0; i < otherImpl.singleUnits.length(); i++) {
         impl.appendSingleUnit(*otherImpl.singleUnits[i], status);
     }
-    if (impl.singleUnits.length() > 1) {
+
+    uint64_t currentConstatDenominator = this->getConstantDenominator(status);
+    uint64_t otherConstantDenominator = other.getConstantDenominator(status);
+
+    // TODO: we can also multiply the constant denominators instead of returning an error.
+    if (currentConstatDenominator != 0 && otherConstantDenominator != 0) {
+        // There is only `one` constant denominator in a compound unit.
+        // Therefore, we Cannot multiply units that both of them have a constant denominator
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return {};
+    }
+
+    // Because either one of the constant denominators is zero, we can use the maximum of them.
+    impl.constantDenominator = uprv_max(currentConstatDenominator, otherConstantDenominator);
+
+    if (impl.singleUnits.length() > 1 || impl.constantDenominator > 0) {
         impl.complexity = UMEASURE_UNIT_COMPOUND;
     }
+
     return std::move(impl).build(status);
 }
 

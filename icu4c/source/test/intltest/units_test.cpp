@@ -53,6 +53,7 @@ class UnitsTest : public IntlTest {
     void testUnitPreferencesWithCLDRTests();
     void testUnitsConstantsDenomenator();
     void testMeasureUnit_withConstantDenominator();
+    void testUnitsConstantsDenomenator_getIdentifier();
     void testConverter();
 };
 
@@ -72,6 +73,7 @@ void UnitsTest::runIndexedTest(int32_t index, UBool exec, const char *&name, cha
     TESTCASE_AUTO(testUnitPreferencesWithCLDRTests);
     TESTCASE_AUTO(testUnitsConstantsDenomenator);
     TESTCASE_AUTO(testMeasureUnit_withConstantDenominator);
+    TESTCASE_AUTO(testUnitsConstantsDenomenator_getIdentifier);
     TESTCASE_AUTO(testConverter);
     TESTCASE_AUTO_END;
 }
@@ -147,7 +149,7 @@ void UnitsTest::testExtractConvertibility() {
         {"millimeter", "meter", CONVERTIBLE},                                        //
         {"yard", "meter", CONVERTIBLE},                                              //
         {"ounce-troy", "kilogram", CONVERTIBLE},                                     //
-        {"percent", "portion", CONVERTIBLE},                                         //
+        {"percent", "part", CONVERTIBLE},                                         //
         {"ofhg", "kilogram-per-square-meter-square-second", CONVERTIBLE},            //
         {"second-per-meter", "meter-per-second", RECIPROCAL},                        //
         {"mile-per-hour", "meter-per-second", CONVERTIBLE},                        //
@@ -365,16 +367,16 @@ void UnitsTest::testConverter() {
         {"meter-per-10", "foot", 1.0, 0.328084},
         {"meter", "foot-per-10", 1.0, 32.8084},
         {"meter", "foot-per-100", 1.0, 328.084},
-        {"portion", "portion-per-1000", 1.0, 1000},
-        {"portion", "portion-per-10000", 1.0, 10000},
-        {"portion", "portion-per-100000", 1.0, 100000},
-        {"portion", "portion-per-1000000", 1.0, 1000000},
-        {"portion-per-10", "portion", 1.0, 0.1},
-        {"portion-per-100", "portion", 1.0, 0.01},
-        {"portion-per-1000", "portion", 1.0, 0.001},
-        {"portion-per-10000", "portion", 1.0, 0.0001},
-        {"portion-per-100000", "portion", 1.0, 0.00001},
-        {"portion-per-1000000", "portion", 1.0, 0.000001},
+        {"part", "part-per-1000", 1.0, 1000},
+        {"part", "part-per-10000", 1.0, 10000},
+        {"part", "part-per-100000", 1.0, 100000},
+        {"part", "part-per-1000000", 1.0, 1000000},
+        {"part-per-10", "part", 1.0, 0.1},
+        {"part-per-100", "part", 1.0, 0.01},
+        {"part-per-1000", "part", 1.0, 0.001},
+        {"part-per-10000", "part", 1.0, 0.0001},
+        {"part-per-100000", "part", 1.0, 0.00001},
+        {"part-per-1000000", "part", 1.0, 0.000001},
         {"mile-per-hour", "meter-per-second", 1.0, 0.44704},
         {"mile-per-100-hour", "meter-per-100-second", 1.0, 0.44704},
         {"mile-per-hour", "meter-per-100-second", 1.0, 44.704},
@@ -1190,78 +1192,86 @@ void UnitsTest::testUnitsConstantsDenomenator() {
     } testCases[]{
         {"meter-per-1000", 1000},
         {"liter-per-1000-kiloliter", 1000},
+        {"meter-per-100-kilometer", 100}, // Failing: ICU-23045
         {"liter-per-kilometer", 0},
         {"second-per-1000-minute", 1000},
         {"gram-per-1000-kilogram", 1000},
         {"meter-per-100", 100},
-        {"portion-per-1", 1},
-        {"portion-per-2", 2},
-        {"portion-per-3", 3},
-        {"portion-per-4", 4},
-        {"portion-per-5", 5},
-        {"portion-per-6", 6},
-        {"portion-per-7", 7},
-        {"portion-per-8", 8},
-        {"portion-per-9", 9},
+        {"part-per-1", 1},
+        {"part-per-2", 2},
+        {"part-per-3", 3},
+        {"part-per-4", 4},
+        {"part-per-5", 5},
+        {"part-per-6", 6},
+        {"part-per-7", 7},
+        {"part-per-8", 8},
+        {"part-per-9", 9},
+
         // Test for constant denominators that are powers of 10
-        {"portion-per-10", 10},
-        {"portion-per-100", 100},
-        {"portion-per-1000", 1000},
-        {"portion-per-10000", 10000},
-        {"portion-per-100000", 100000},
-        {"portion-per-1000000", 1000000},
-        {"portion-per-10000000", 10000000},
-        {"portion-per-100000000", 100000000},
-        {"portion-per-1000000000", 1000000000},
-        {"portion-per-10000000000", 10000000000},
-        {"portion-per-100000000000", 100000000000},
-        {"portion-per-1000000000000", 1000000000000},
-        {"portion-per-10000000000000", 10000000000000},
-        {"portion-per-100000000000000", 100000000000000},
-        {"portion-per-1000000000000000", 1000000000000000},
-        {"portion-per-10000000000000000", 10000000000000000},
-        {"portion-per-100000000000000000", 100000000000000000},
-        {"portion-per-1000000000000000000", 1000000000000000000},
+        {"part-per-10", 10},
+        {"part-per-100", 100},
+        {"part-per-1000", 1000},
+        {"part-per-10000", 10000},
+        {"part-per-100000", 100000},
+        {"part-per-1000000", 1000000}, // Failing: ICU-23045
+        {"part-per-10000000", 10000000},
+        {"part-per-100000000", 100000000},
+        {"part-per-1000000000", 1000000000}, // Failing: ICU-23045
+        {"part-per-10000000000", 10000000000},
+        {"part-per-100000000000", 100000000000},
+        {"part-per-1000000000000", 1000000000000},
+        {"part-per-10000000000000", 10000000000000},
+        {"part-per-100000000000000", 100000000000000},
+        {"part-per-1000000000000000", 1000000000000000},
+        {"part-per-10000000000000000", 10000000000000000},
+        {"part-per-100000000000000000", 100000000000000000},
+        {"part-per-1000000000000000000", 1000000000000000000},
+        {"part-per-1e3-kilometer", 1000},
+
         // Test for constant denominators that are represented as scientific notation
         // numbers.
-        {"portion-per-1e1", 10},
-        {"portion-per-1E1", 10},
-        {"portion-per-1e2", 100},
-        {"portion-per-1E2", 100},
-        {"portion-per-1e3", 1000},
-        {"portion-per-1E3", 1000},
-        {"portion-per-1e4", 10000},
-        {"portion-per-1E4", 10000},
-        {"portion-per-1e5", 100000},
-        {"portion-per-1E5", 100000},
-        {"portion-per-1e6", 1000000},
-        {"portion-per-1E6", 1000000},
-        {"portion-per-1e10", 10000000000},
-        {"portion-per-1E10", 10000000000},
-        {"portion-per-1e18", 1000000000000000000},
-        {"portion-per-1E18", 1000000000000000000},
+        {"part-per-1e1", 10},
+        {"part-per-1E1", 10},
+        {"part-per-1e2", 100},
+        {"part-per-1E2", 100},
+        {"part-per-1e3", 1000},
+        {"part-per-1E3", 1000},
+        {"part-per-1e4", 10000},
+        {"part-per-1E4", 10000},
+        {"part-per-1e5", 100000},
+        {"part-per-1E5", 100000},
+        {"part-per-1e6", 1000000}, // Failing: ICU-23045
+        {"part-per-1E6", 1000000}, // Failing: ICU-23045
+        {"part-per-1e9", 1000000000}, // Failing: ICU-23045
+        {"part-per-1E9", 1000000000}, // Failing: ICU-23045
+        {"part-per-1e10", 10000000000},
+        {"part-per-1E10", 10000000000},
+        {"part-per-1e18", 1000000000000000000},
+        {"part-per-1E18", 1000000000000000000},
+
         // Test for constant denominators that are randomly selected.
         {"liter-per-12345-kilometer", 12345},
         {"per-1000-kilometer", 1000},
         {"liter-per-1000-kiloliter", 1000},
+
         // Test for constant denominators that give 0.
         {"meter", 0},
         {"meter-per-second", 0},
         {"meter-per-square-second", 0},
-        // NOTE: The following constant denominator should be 0. However, since
-        // `100-kilometer` is treated as a unit in CLDR,
-        // the unit does not have a constant denominator.
-        // This issue should be addressed in CLDR.
-        {"meter-per-100-kilometer", 0},
-        // NOTE: the following CLDR identifier should be invalid, but because
-        // `100-kilometer` is considered a unit in CLDR,
-        // one `100` will be considered as a unit constant denominator and the other
-        // `100` will be considered part of the unit.
-        // This issue should be addressed in CLDR.
-        {"meter-per-100-100-kilometer", 100},
     };
 
     for (const auto &testCase : testCases) {
+        if (uprv_strcmp(testCase.source, "part-per-1000000") == 0 ||
+            uprv_strcmp(testCase.source, "part-per-1000000000") == 0 ||
+            uprv_strcmp(testCase.source, "part-per-1e6") == 0 ||
+            uprv_strcmp(testCase.source, "part-per-1E6") == 0 ||
+            uprv_strcmp(testCase.source, "part-per-1e9") == 0 ||
+            uprv_strcmp(testCase.source, "part-per-1E9") == 0 ||
+            uprv_strcmp(testCase.source, "meter-per-100-kilometer") == 0) {
+            logKnownIssue("ICU-23045", "Incorrect constant denominator for certain unit identifiers");
+            continue;
+        }
+
         MeasureUnit unit = MeasureUnit::forIdentifier(testCase.source, status);
         if (status.errIfFailureAndReset("forIdentifier(\"%s\")", testCase.source)) {
             continue;
@@ -1278,10 +1288,21 @@ void UnitsTest::testUnitsConstantsDenomenator() {
         }
 
         if (constant != testCase.expectedConstant) {
-            assertTrue("getConstantDenominator(\"%s\")", false);
+            CharString msg;
+            msg.append("getConstantDenominator (\"", status);
+            msg.append(testCase.source, status);
+            msg.append("\")", status);
+            assertTrue(msg.data(), false);
+            status.reset();
         }
+
         if (constant != 0) {
-            assertEquals("getComplexity(\"%s\")", UMEASURE_UNIT_COMPOUND, complexity);
+            CharString msg;
+            msg.append("getComplexity (\"", status);
+            msg.append(testCase.source, status);
+            msg.append("\")", status);
+            assertEquals(msg.data(), UMEASURE_UNIT_COMPOUND, complexity);
+            status.reset();
         }
     }
 }
@@ -1297,8 +1318,8 @@ void UnitsTest::testMeasureUnit_withConstantDenominator() {
     } testCases[]{
         {"meter-per-second", 100, UMEASURE_UNIT_COMPOUND},
         {"meter-per-100-second", 0, UMEASURE_UNIT_COMPOUND},
-        {"portion", 100, UMEASURE_UNIT_COMPOUND},
-        {"portion-per-100", 0, UMEASURE_UNIT_SINGLE},
+        {"part", 100, UMEASURE_UNIT_COMPOUND},
+        {"part-per-100", 0, UMEASURE_UNIT_SINGLE},
 
     };
 
@@ -1323,23 +1344,75 @@ void UnitsTest::testMeasureUnit_withConstantDenominator() {
             continue;
         }
 
+        CharString msg;
         if (actualConstantDenominator != testCase.constantDenominator) {
-            assertTrue("getConstantDenominator(\"%s\")", false);
+            msg.clear();
+            msg.append("getConstantDenominator (\"", status);
+            msg.append(testCase.source, status);
+            msg.append("\")", status);
+            assertTrue(msg.data(), false);
+            status.reset();
         }
-        assertEquals("getComplexity(\"%s\")", testCase.expectedComplexity, actualComplexity);
+        msg.clear();
+        msg.append("getComplexity (\"", status);
+        msg.append(testCase.source, status);
+        msg.append("\")", status);
+        assertEquals(msg.data(), testCase.expectedComplexity, actualComplexity);
+        status.reset();
     }
 
     // Test for invalid constant denominator
-    auto unit = MeasureUnit::forIdentifier("portion", status);
-    if (status.errIfFailureAndReset("forIdentifier(\"portion\")")) {
+    auto unit = MeasureUnit::forIdentifier("part", status);
+    if (status.errIfFailureAndReset("forIdentifier(\"part\")")) {
         return;
     }
 
     uint64_t denominator = LONG_MAX;
     denominator++;
     unit = unit.withConstantDenominator(denominator, status);
-    assertTrue("There is a failure caused by withConstantDenominator(\"portion\")", status.isFailure());
+    assertTrue("There is a failure caused by withConstantDenominator(\"part\")", status.isFailure());
     status.reset();
+}
+
+void UnitsTest::testUnitsConstantsDenomenator_getIdentifier() {
+    IcuTestErrorCode status(*this, "UnitTests::testUnitsConstantsDenomenator_getIdentifier");
+
+    // Test Cases
+    struct TestCase {
+        const char *source;
+        const char *expectedIdentifier;
+    } testCases[]{
+        {"meter-per-1000", "meter-per-1000"},
+        {"meter-per-1000-kilometer", "meter-per-1000-kilometer"},
+        {"meter-per-1000000", "meter-per-1e6"},
+        {"meter-per-1000000-kilometer", "meter-per-1e6-kilometer"},
+        {"meter-per-1000000000", "meter-per-1e9"},
+        {"meter-per-1000000000-kilometer", "meter-per-1e9-kilometer"},
+        {"meter-per-1000000000000", "meter-per-1e12"},
+        {"meter-per-1000000000000-kilometer", "meter-per-1e12-kilometer"},
+        {"meter-per-1000000000000000", "meter-per-1e15"},
+        {"meter-per-1e15-kilometer", "meter-per-1e15-kilometer"},
+        {"meter-per-1000000000000000000", "meter-per-1e18"},
+        {"meter-per-1e18-kilometer", "meter-per-1e18-kilometer"},
+        {"meter-per-1000000000000001", "meter-per-1000000000000001"},
+        {"meter-per-1000000000000001-kilometer", "meter-per-1000000000000001-kilometer"},
+    };
+
+    for (const auto &testCase : testCases) {
+        MeasureUnit unit = MeasureUnit::forIdentifier(testCase.source, status);
+        if (status.errIfFailureAndReset("forIdentifier(\"%s\")", testCase.source)) {
+            continue;
+        }
+
+        auto actualIdentifier = unit.getIdentifier();
+
+        CharString msg;
+        msg.append("getIdentifier (\"", status);
+        msg.append(testCase.source, status);
+        msg.append("\")", status);
+        assertEquals(msg.data(), testCase.expectedIdentifier, actualIdentifier);
+        status.reset();
+    }
 }
 
 #endif /* #if !UCONFIG_NO_FORMATTING */

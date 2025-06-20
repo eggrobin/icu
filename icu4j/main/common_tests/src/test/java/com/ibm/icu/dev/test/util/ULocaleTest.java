@@ -1824,8 +1824,8 @@ public class ULocaleTest extends CoreTestFmwk {
                 {"en_Cyrl-RU", "en-Cyrl-RU", "en-Cyrl-RU"},
                 {"en_Latn-RU", "en-RU", "en-RU"},
                 {"sr_Cyrl-US", "sr-US", "sr-US"},
-                {"sr_Cyrl-RU", "sr-Cyrl-RU", "sr-Cyrl-RU"},
-                {"sr_Latn-RU", "sr-RU", "sr-RU"},
+                {"sr_Cyrl-RU", "sr-RU", "sr-RU"},
+                {"sr_Latn-RU", "sr_Latn-RU", "sr_Latn-RU"},
         };
         for (String[] test : data) {
             ULocale source = new ULocale(test[0]);
@@ -2713,8 +2713,8 @@ public class ULocaleTest extends CoreTestFmwk {
                     "dz"
                 }, {
                     "und_BY",
-                    "be_Cyrl_BY",
-                    "be"
+                    "ru_Cyrl_BY",
+                    "ru_BY"
                 }, {
                     "und_Beng",
                     "bn_Beng_BD",
@@ -5723,14 +5723,9 @@ public class ULocaleTest extends CoreTestFmwk {
             assertEquals("addLikelySubtags(" + test.source + ") should be unchanged",
                 l, ULocale.addLikelySubtags(l));
         } else {
-            if ( ( test.source.equals("und-Latn-MU") || test.source.equals("und-Latn-RS") || test.source.equals("und-Latn-SL")
-                || test.source.equals("und-Latn-TK") || test.source.equals("und-Latn-ZM") )
-                && logKnownIssue("CLDR-18002", "Incorrect Likely Subtags for some entries modified in CLDR 46") ) {
-                    return;
-                }
-              assertEquals("addLikelySubtags(" + test.source + ")",
-                  test.addLikely, ULocale.addLikelySubtags(l).toLanguageTag());
-              }
+            assertEquals("addLikelySubtags(" + test.source + ")",
+                test.addLikely, ULocale.addLikelySubtags(l).toLanguageTag());
+        }
         if (test.removeFavorRegion.equals("FAIL")) {
             assertEquals("minimizeSubtags(" + test.source + ") should be unchanged",
                 l, ULocale.minimizeSubtags(l));

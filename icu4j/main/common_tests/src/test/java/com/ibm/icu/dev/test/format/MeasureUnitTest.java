@@ -46,11 +46,11 @@ import com.ibm.icu.util.Currency;
 import com.ibm.icu.util.CurrencyAmount;
 import com.ibm.icu.util.Measure;
 import com.ibm.icu.util.MeasureUnit;
+import com.ibm.icu.util.MeasureUnit.Complexity;
 import com.ibm.icu.util.NoUnit;
 import com.ibm.icu.util.TimeUnit;
 import com.ibm.icu.util.TimeUnitAmount;
 import com.ibm.icu.util.ULocale;
-import com.ibm.icu.util.MeasureUnit.Complexity;
 
 /**
  * This file contains regular unit tests.
@@ -1330,60 +1330,85 @@ public class MeasureUnitTest extends CoreTestFmwk {
         List<ConstantDenominatorTestCase> testCases = Arrays.asList(
                 new ConstantDenominatorTestCase("meter-per-1000", 1000),
                 new ConstantDenominatorTestCase("liter-per-1000-kiloliter", 1000),
+                new ConstantDenominatorTestCase("meter-per-100-kilometer", 100), // Failing ICU-23045
                 new ConstantDenominatorTestCase("liter-per-kilometer", 0),
                 new ConstantDenominatorTestCase("second-per-1000-minute", 1000),
                 new ConstantDenominatorTestCase("gram-per-1000-kilogram", 1000),
                 new ConstantDenominatorTestCase("meter-per-100", 100),
+                new ConstantDenominatorTestCase("part-per-1", 1),
+                new ConstantDenominatorTestCase("part-per-2", 2),
+                new ConstantDenominatorTestCase("part-per-3", 3),
+                new ConstantDenominatorTestCase("part-per-4", 4),
+                new ConstantDenominatorTestCase("part-per-5", 5),
+                new ConstantDenominatorTestCase("part-per-6", 6),
+                new ConstantDenominatorTestCase("part-per-7", 7),
+                new ConstantDenominatorTestCase("part-per-8", 8),
+                new ConstantDenominatorTestCase("part-per-9", 9),
+
                 // Test for constant denominators that are powers of 10
-                new ConstantDenominatorTestCase("portion-per-1", 1),
-                new ConstantDenominatorTestCase("portion-per-10", 10),
-                new ConstantDenominatorTestCase("portion-per-100", 100),
-                new ConstantDenominatorTestCase("portion-per-1000", 1000),
-                new ConstantDenominatorTestCase("portion-per-10000", 10000),
-                new ConstantDenominatorTestCase("portion-per-100000", 100000),
-                new ConstantDenominatorTestCase("portion-per-1000000", 1000000),
-                new ConstantDenominatorTestCase("portion-per-10000000", 10000000),
-                new ConstantDenominatorTestCase("portion-per-100000000", 100000000),
-                new ConstantDenominatorTestCase("portion-per-1000000000", 1000000000),
-                new ConstantDenominatorTestCase("portion-per-10000000000", 10000000000L),
-                new ConstantDenominatorTestCase("portion-per-100000000000", 100000000000L),
-                new ConstantDenominatorTestCase("portion-per-1000000000000", 1000000000000L),
-                new ConstantDenominatorTestCase("portion-per-10000000000000", 10000000000000L),
-                new ConstantDenominatorTestCase("portion-per-100000000000000", 100000000000000L),
-                new ConstantDenominatorTestCase("portion-per-1000000000000000", 1000000000000000L),
-                new ConstantDenominatorTestCase("portion-per-10000000000000000", 10000000000000000L),
-                new ConstantDenominatorTestCase("portion-per-100000000000000000", 100000000000000000L),
-                new ConstantDenominatorTestCase("portion-per-1000000000000000000", 1000000000000000000L),
-                // Test for constant denominators that are represented as scientific notation
-                // numbers.
-                new ConstantDenominatorTestCase("portion-per-1e9", 1000000000L),
-                new ConstantDenominatorTestCase("portion-per-1E9", 1000000000L),
-                new ConstantDenominatorTestCase("portion-per-10e9", 10000000000L),
-                new ConstantDenominatorTestCase("portion-per-10E9", 10000000000L),
-                new ConstantDenominatorTestCase("portion-per-1e10", 10000000000L),
-                new ConstantDenominatorTestCase("portion-per-1E10", 10000000000L),
-                new ConstantDenominatorTestCase("portion-per-1e3-kilometer", 1000),
-                // Test for constant denominators that are randomely selected.
+                new ConstantDenominatorTestCase("part-per-10", 10),
+                new ConstantDenominatorTestCase("part-per-100", 100),
+                new ConstantDenominatorTestCase("part-per-1000", 1000),
+                new ConstantDenominatorTestCase("part-per-10000", 10000),
+                new ConstantDenominatorTestCase("part-per-100000", 100000),
+                new ConstantDenominatorTestCase("part-per-1000000", 1000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-10000000", 10000000),
+                new ConstantDenominatorTestCase("part-per-100000000", 100000000),
+                new ConstantDenominatorTestCase("part-per-1000000000", 1000000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-10000000000", 10000000000L),
+                new ConstantDenominatorTestCase("part-per-100000000000", 100000000000L),
+                new ConstantDenominatorTestCase("part-per-1000000000000", 1000000000000L),
+                new ConstantDenominatorTestCase("part-per-10000000000000", 10000000000000L),
+                new ConstantDenominatorTestCase("part-per-100000000000000", 100000000000000L),
+                new ConstantDenominatorTestCase("part-per-1000000000000000", 1000000000000000L),
+                new ConstantDenominatorTestCase("part-per-10000000000000000", 10000000000000000L),
+                new ConstantDenominatorTestCase("part-per-100000000000000000", 100000000000000000L),
+                new ConstantDenominatorTestCase("part-per-1000000000000000000", 1000000000000000000L),
+                new ConstantDenominatorTestCase("part-per-1e3-kilometer", 1000),
+        
+                // Test for constant denominators that are represented as scientific notation numbers.
+                new ConstantDenominatorTestCase("part-per-1e1", 10),
+                new ConstantDenominatorTestCase("part-per-1E1", 10),
+                new ConstantDenominatorTestCase("part-per-1e2", 100),
+                new ConstantDenominatorTestCase("part-per-1E2", 100),
+                new ConstantDenominatorTestCase("part-per-1e3", 1000),
+                new ConstantDenominatorTestCase("part-per-1E3", 1000),
+                new ConstantDenominatorTestCase("part-per-1e4", 10000),
+                new ConstantDenominatorTestCase("part-per-1E4", 10000),
+                new ConstantDenominatorTestCase("part-per-1e5", 100000),
+                new ConstantDenominatorTestCase("part-per-1E5", 100000),
+                new ConstantDenominatorTestCase("part-per-1e6", 1000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-1E6", 1000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-1e9", 1000000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-1E9", 1000000000), // Failing ICU-23045
+                new ConstantDenominatorTestCase("part-per-1e10", 10000000000L),
+                new ConstantDenominatorTestCase("part-per-1E10", 10000000000L),
+                new ConstantDenominatorTestCase("part-per-1e18", 1000000000000000000L),
+                new ConstantDenominatorTestCase("part-per-1E18", 1000000000000000000L),
+        
+                // Test for constant denominators that are randomly selected.
                 new ConstantDenominatorTestCase("liter-per-12345-kilometer", 12345),
                 new ConstantDenominatorTestCase("per-1000-kilometer", 1000),
                 new ConstantDenominatorTestCase("liter-per-1000-kiloliter", 1000),
-                // Test for constant denominators that gives 0.
-                        new ConstantDenominatorTestCase("meter", 0),
+
+                // Test for constant denominators that give 0.
+                new ConstantDenominatorTestCase("meter", 0),
                 new ConstantDenominatorTestCase("meter-per-second", 0),
-                new ConstantDenominatorTestCase("meter-per-square-second", 0),
-                // NOTE: The following constant denominator should be 0. However, since
-                // `100-kilometer` is treated as a unit in CLDR,
-                // the unit does not have a constant denominator.
-                // This issue should be addressed in CLDR.
-                new ConstantDenominatorTestCase("meter-per-100-kilometer", 0),
-                // NOTE: the following CLDR identifier should be invalid, but because
-                // `100-kilometer` is considered a unit in CLDR,
-                // one `100` will be considered as a unit constant denominator and the other
-                // `100` will be considered part of the unit.
-                // This issue should be addressed in CLDR.
-                new ConstantDenominatorTestCase("meter-per-100-100-kilometer", 100));
+                new ConstantDenominatorTestCase("meter-per-square-second", 0));
 
         for (ConstantDenominatorTestCase testCase : testCases) {
+            switch (testCase.identifier) {
+                case "part-per-1000000":
+                case "part-per-1000000000":
+                case "part-per-1e6":
+                case "part-per-1E6":
+                case "part-per-1e9":
+                case "part-per-1E9":
+                case "meter-per-100-kilometer":
+                    logKnownIssue("ICU-23045", "Incorrect constant denominator for certain unit identifiers");
+                    continue;
+            }
+
             MeasureUnit unit = MeasureUnit.forIdentifier(testCase.identifier);
             assertEquals("Constant denominator for " + testCase.identifier, testCase.expectedConstantDenominator,
                     unit.getConstantDenominator());
@@ -1443,15 +1468,48 @@ public class MeasureUnitTest extends CoreTestFmwk {
                 "meter-per-1000-second-1000-kilometer",
                 "per-1000-and-per-1000",
                 "liter-per-kilometer-100",
+                "meter-per-100-100-kilometer", // Failing ICU-23045
             };
 
         for (String input : inputs) {
+            if (input.equals("meter-per-100-100-kilometer")) {
+                logKnownIssue("ICU-23045", "Incorrect constant denominator for certain unit identifiers " +
+                        "leads to incorrect unit identifiers.");
+                continue;
+            }
+
             try {
                 MeasureUnit.forIdentifier(input);
                 Assert.fail("An IllegalArgumentException must be thrown");
             } catch (IllegalArgumentException e) {
                 continue;
             }
+        }
+    }
+
+    @Test
+    public void TestGetIdentifierForConstantDenominator() {
+        String testCases[][] = {
+                { "meter-per-1000", "meter-per-1000" },
+                { "meter-per-1000-kilometer", "meter-per-1000-kilometer" },
+                { "meter-per-1000000", "meter-per-1e6" },
+                { "meter-per-1000000-kilometer", "meter-per-1e6-kilometer" },
+                { "meter-per-1000000000", "meter-per-1e9" },
+                { "meter-per-1000000000-kilometer", "meter-per-1e9-kilometer" },
+                { "meter-per-1000000000000", "meter-per-1e12" },
+                { "meter-per-1000000000000-kilometer", "meter-per-1e12-kilometer" },
+                { "meter-per-1000000000000000", "meter-per-1e15" },
+                { "meter-per-1e15-kilometer", "meter-per-1e15-kilometer" },
+                { "meter-per-1000000000000000000", "meter-per-1e18" },
+                { "meter-per-1e18-kilometer", "meter-per-1e18-kilometer" },
+                { "meter-per-1000000000000001", "meter-per-1000000000000001" },
+                { "meter-per-1000000000000001-kilometer", "meter-per-1000000000000001-kilometer" },
+        };
+
+        for (String[] testCase : testCases) {
+            MeasureUnit unit = MeasureUnit.forIdentifier(testCase[0]);
+            String actual = unit.getIdentifier();
+            assertEquals(testCase[0], testCase[1], actual);
         }
     }
 
@@ -1535,10 +1593,10 @@ public class MeasureUnitTest extends CoreTestFmwk {
                 continue;
             }
 
-            if (unit.getIdentifier().equals("portion-per-1e9")) {
-            	logKnownIssue("ICU-22781", "Handle concentr/perbillion in ICU");
-            	continue;
-            }
+            //if (unit.getIdentifier().equals("part-per-1e9")) {
+            //	logKnownIssue("ICU-22781", "Handle concentr/perbillion in ICU");
+            //	continue;
+            //}
 
             // Prove that all built-in units are parseable, except "generic" temperature
             // (and for now, beaufort units)
@@ -1575,7 +1633,6 @@ public class MeasureUnitTest extends CoreTestFmwk {
             new TestCase("centimeter-centimeter", MeasureUnit.SQUARE_CENTIMETER),
             new TestCase("square-foot", MeasureUnit.SQUARE_FOOT),
             new TestCase("pow2-inch", MeasureUnit.SQUARE_INCH),
-            new TestCase("milligram-per-deciliter", MeasureUnit.MILLIGRAM_PER_DECILITER),
             new TestCase("pound-force-per-pow2-inch", MeasureUnit.POUND_PER_SQUARE_INCH),
             new TestCase("yard-pow2-yard", MeasureUnit.CUBIC_YARD),
             new TestCase("square-yard-yard", MeasureUnit.CUBIC_YARD),

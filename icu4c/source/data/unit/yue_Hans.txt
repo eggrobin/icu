@@ -30,6 +30,12 @@ yue_Hans{
         compound{
             per{"每 {1} {0}"}
         }
+        concentr{
+            part-per-1e9{
+                dnam{"十亿分点浓度"}
+                other{"{0} 十亿分点浓度"}
+            }
+        }
         consumption{
             liter-per-100-kilometer{
                 dnam{"每 100 公里公升"}
@@ -239,6 +245,11 @@ yue_Hans{
         acceleration{
             meter-per-square-second{
                 other{"{0}m/s²"}
+            }
+        }
+        concentr{
+            part-per-1e9{
+                other{"{0}ppb"}
             }
         }
         consumption{
@@ -469,9 +480,12 @@ yue_Hans{
                 dnam{"摩尔"}
                 other{"{0} 摩尔"}
             }
-            permillion{
+            part-per-1e6{
                 dnam{"百万分率"}
                 other{"{0} 百万分率"}
+            }
+            part-per-1e9{
+                dnam{"浓度/十亿"}
             }
             permyriad{
                 dnam{"点子"}

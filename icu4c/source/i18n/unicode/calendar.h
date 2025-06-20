@@ -1555,6 +1555,14 @@ protected:
      * @internal
      */
     virtual bool isEra0CountingBackward() const { return false; }
+
+    /**
+     * Related year difference.
+     * @return The difference in Related year.
+     * @internal
+     */
+    virtual int32_t getRelatedYearDifference() const;
+
 #endif  /* U_HIDE_INTERNAL_API */
 
     /**
@@ -1693,10 +1701,9 @@ protected:
      * calendar system.  Subclasses should override this method if they can
      * provide a more correct or more efficient implementation than the
      * default implementation in Calendar.
-     * @stable ICU 2.0
+     * @internal
      */
-    virtual int32_t handleGetYearLength(int32_t eyear) const;
-
+    virtual int32_t handleGetYearLength(int32_t eyear, UErrorCode& status) const;
 
     /**
      * Return the extended year defined by the current fields.  This will

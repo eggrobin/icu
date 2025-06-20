@@ -227,6 +227,7 @@ void NumberFormatTest::runIndexedTest( int32_t index, UBool exec, const char* &n
   TESTCASE_AUTO(Test11649_DecFmtCurrencies);
   TESTCASE_AUTO(Test13148_ParseGroupingSeparators);
   TESTCASE_AUTO(Test12753_PatternDecimalPoint);
+  TESTCASE_AUTO(Test22303_PatternDecimalPoint_InfNaN);
   TESTCASE_AUTO(Test11647_PatternCurrencySymbols);
   TESTCASE_AUTO(Test11913_BigDecimal);
   TESTCASE_AUTO(Test11020_RoundingInScientificNotation);
@@ -8196,7 +8197,7 @@ void NumberFormatTest::TestCurrencyUsage() {
 
             // test the getter here
             UCurrencyUsage curUsage = fmt->getCurrencyUsage();
-            assertEquals("Test usage getter - standard", static_cast<int32_t>(curUsage), static_cast<int32_t>(UCURR_USAGE_STANDARD));
+            assertEquals("Test usage getter - standard", curUsage, UCURR_USAGE_STANDARD);
 
             fmt->setCurrencyUsage(UCURR_USAGE_CASH, &status);
         }else{
@@ -8208,7 +8209,7 @@ void NumberFormatTest::TestCurrencyUsage() {
 
         // must be usage = cash
         UCurrencyUsage curUsage = fmt->getCurrencyUsage();
-        assertEquals("Test usage getter - cash", static_cast<int32_t>(curUsage), static_cast<int32_t>(UCURR_USAGE_CASH));
+        assertEquals("Test usage getter - cash", curUsage, UCURR_USAGE_CASH);
 
         UnicodeString cash_currency;
         fmt->format(agent,cash_currency);
@@ -9030,9 +9031,9 @@ void NumberFormatTest::TestFormatFailIfMoreThanMaxDigits() {
     if (status.errDataIfFailureAndReset()) {
         return;
     }
-    assertEquals("Coverage for getter 1", static_cast<UBool>(false), df.isFormatFailIfMoreThanMaxDigits());
+    assertEquals("Coverage for getter 1", false, df.isFormatFailIfMoreThanMaxDigits());
     df.setFormatFailIfMoreThanMaxDigits(true);
-    assertEquals("Coverage for getter 2", static_cast<UBool>(true), df.isFormatFailIfMoreThanMaxDigits());
+    assertEquals("Coverage for getter 2", true, df.isFormatFailIfMoreThanMaxDigits());
     df.setMaximumIntegerDigits(2);
     UnicodeString result;
     df.format(1234, result, status);
@@ -9046,9 +9047,9 @@ void NumberFormatTest::TestParseCaseSensitive() {
     if (status.errDataIfFailureAndReset()) {
         return;
     }
-    assertEquals("Coverage for getter 1", static_cast<UBool>(false), df.isParseCaseSensitive());
+    assertEquals("Coverage for getter 1", false, df.isParseCaseSensitive());
     df.setParseCaseSensitive(true);
-    assertEquals("Coverage for getter 1", static_cast<UBool>(true), df.isParseCaseSensitive());
+    assertEquals("Coverage for getter 1", true, df.isParseCaseSensitive());
     Formattable result;
     ParsePosition ppos;
     df.parse(u"1e2", result, ppos);
@@ -9063,9 +9064,9 @@ void NumberFormatTest::TestParseNoExponent() {
     if (status.errDataIfFailureAndReset()) {
         return;
     }
-    assertEquals("Coverage for getter 1", static_cast<UBool>(false), df.isParseNoExponent());
+    assertEquals("Coverage for getter 1", false, df.isParseNoExponent());
     df.setParseNoExponent(true);
-    assertEquals("Coverage for getter 1", static_cast<UBool>(true), df.isParseNoExponent());
+    assertEquals("Coverage for getter 1", true, df.isParseNoExponent());
     Formattable result;
     ParsePosition ppos;
     df.parse(u"1E2", result, ppos);
@@ -9080,9 +9081,9 @@ void NumberFormatTest::TestSignAlwaysShown() {
     if (status.errDataIfFailureAndReset()) {
         return;
     }
-    assertEquals("Coverage for getter 1", static_cast<UBool>(false), df.isSignAlwaysShown());
+    assertEquals("Coverage for getter 1", false, df.isSignAlwaysShown());
     df.setSignAlwaysShown(true);
-    assertEquals("Coverage for getter 1", static_cast<UBool>(true), df.isSignAlwaysShown());
+    assertEquals("Coverage for getter 1", true, df.isSignAlwaysShown());
     UnicodeString result;
     df.format(1234, result, status);
     status.errIfFailureAndReset();
@@ -9423,9 +9424,26 @@ void NumberFormatTest::Test12753_PatternDecimalPoint() {
     df.parse(u"123",result, status);
     assertEquals("Parsing integer succeeded even though setDecimalPatternMatchRequired was set",
                  U_INVALID_FORMAT_ERROR, status);
-    }
+}
 
- void NumberFormatTest::Test11647_PatternCurrencySymbols() {
+void NumberFormatTest::Test22303_PatternDecimalPoint_InfNaN() {
+    UErrorCode status = U_ZERO_ERROR;
+    DecimalFormatSymbols symbols(Locale::getUS(), status);
+    symbols.setSymbol(DecimalFormatSymbols::kInfinitySymbol, u"infinity", false);
+    symbols.setSymbol(DecimalFormatSymbols::kNaNSymbol, u"notanumber", false);
+    DecimalFormat df(u"0.00", symbols, status);
+    if (!assertSuccess("", status)) return;
+    df.setDecimalPatternMatchRequired(true);
+    Formattable result;
+    df.parse(u"infinity", result, status);
+    assertEquals("Should parse to +INF even though decimal is required", INFINITY, result.getDouble());
+    df.parse(u"notanumber", result, status);
+    assertEquals("Should parse to NaN even though decimal is required", NAN, result.getDouble());
+    df.parse("-infinity", result, status);
+    assertEquals("Should parse to -INF even though decimal is required", -INFINITY, result.getDouble());
+}
+
+void NumberFormatTest::Test11647_PatternCurrencySymbols() {
     UErrorCode status = U_ZERO_ERROR;
     DecimalFormat df(status);
     df.applyPattern(u"¤¤¤¤#", status);
