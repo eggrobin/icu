@@ -4436,7 +4436,7 @@ void UnicodeSetTest::TestUTS61Examples() {
         }
         status = U_ZERO_ERROR;
     }
-    // Various examples in https://www.unicode.org/reports/tr61/proposed.html#Negations.
+    // Various examples in https://www.unicode.org/reports/tr61/#Negations.
     const UnicodeSet unassigned("[:Unassigned:]", status);
     const UnicodeSet assigned("[:^Unassigned:]", status);
     const UnicodeSet compatibilityDecomposables("[:Decomposition_Type=compat:]", status);
@@ -4471,7 +4471,7 @@ void UnicodeSetTest::TestUTS61Examples() {
         }
         status = U_ZERO_ERROR;
     }
-    // Example in https://www.unicode.org/reports/tr61/proposed.html#Age-Queries,
+    // Example in https://www.unicode.org/reports/tr61/#Age-Queries,
     // with [ \P{U6:Cn} \p{U6:Noncharacter_Code_Point} ] computed by the Unicode tools, since
     // version-qualifier is out of scope for ICU.
 
@@ -4506,4 +4506,10 @@ void UnicodeSetTest::TestUTS61Examples() {
         errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" +
               age6Expected.toPattern(t));
     }
+    // https://www.unicode.org/reports/tr61/#Set-Operations-Semantics
+    UnicodeSet(uR"([z-a])", status);
+    if (status != U_MALFORMED_SET) {
+        errln(UnicodeString("Unexpected status ") + u_errorName(status));
+    }
+    status = U_ZERO_ERROR;
 }
