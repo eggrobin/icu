@@ -4361,7 +4361,8 @@ void UnicodeSetTest::TestUTS61Examples() {
         TEST_ASSERT_SUCCESS_FOR(expression, status);
         if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\\') {
             UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + uR"( ≠ [\\])");
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                  uR"( ≠ [\\])");
         }
         status = U_ZERO_ERROR;
     }
@@ -4374,7 +4375,8 @@ void UnicodeSetTest::TestUTS61Examples() {
         TEST_ASSERT_SUCCESS_FOR(expression, status);
         if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\u0007') {
             UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + uR"( ≠ [\u0007])");
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                  uR"( ≠ [\u0007])");
         }
         status = U_ZERO_ERROR;
     }
@@ -4396,9 +4398,8 @@ void UnicodeSetTest::TestUTS61Examples() {
     }
     // Examples in https://www.unicode.org/reports/tr61/#Named-Elements-Semantics.
     for (const auto expression : std::vector<std::u16string_view>{
-             uR"([\N{SPACE}])",
-             uR"([\xN{0020:SPACE}])",
-             uR"([\xcN{20: :SPACE}])",  // TODO(egg): Incompatible syntax; maybe xlN?
+             uR"([\N{SPACE}])", uR"([\xN{0020:SPACE}])",
+             uR"([\xcN{20: :SPACE}])", // TODO(egg): Incompatible syntax; maybe xlN?
          }) {
         UnicodeSet set(expression, status);
         TEST_ASSERT_SUCCESS_FOR(expression, status);
@@ -4430,8 +4431,8 @@ void UnicodeSetTest::TestUTS61Examples() {
         TEST_ASSERT_SUCCESS_FOR(expression, status);
         if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != character) {
             UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ [)" +
-                  UnicodeString(static_cast<UChar>(character)) + uR"(])");
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                  +uR"( ≠ [)" + UnicodeString(static_cast<UChar>(character)) + uR"(])");
         }
         status = U_ZERO_ERROR;
     }
@@ -4440,13 +4441,14 @@ void UnicodeSetTest::TestUTS61Examples() {
     const UnicodeSet assigned("[:^Unassigned:]", status);
     const UnicodeSet compatibilityDecomposables("[:Decomposition_Type=compat:]", status);
     const UnicodeSet nonNoncharacters("[:Noncharacter_Code_Point=No:]", status);
-    for (const auto [expression, expected] : std::vector<std::pair<std::u16string_view, const UnicodeSet&>>{
+    for (const auto [expression, expected] :
+         std::vector<std::pair<std::u16string_view, const UnicodeSet &>>{
              // Exteriorly negated:
              {uR"(\P{Cn})", assigned},
              {uR"([:^Cn:])", assigned},
              {uR"(\P{General_Category=Cn})", assigned},
              {uR"([:^General_Category=Cn:])", assigned},
-             {uR"([:^General_Category≠Cn:])", unassigned},  // Doubly negated.
+             {uR"([:^General_Category≠Cn:])", unassigned}, // Doubly negated.
              // Interiorly negated:
              {uR"(\p{General_Category≠Cn})", assigned},
              {uR"([:General_Category≠Cn:])", assigned},
@@ -4464,7 +4466,8 @@ void UnicodeSetTest::TestUTS61Examples() {
         TEST_ASSERT_SUCCESS_FOR(expression, status);
         if (U_SUCCESS(status) && set != expected) {
             UnicodeString s, t;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" + expected.toPattern(t));
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                  +uR"( ≠ )" + expected.toPattern(t));
         }
         status = U_ZERO_ERROR;
     }
