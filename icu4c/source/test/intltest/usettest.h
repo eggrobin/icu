@@ -109,6 +109,7 @@ private:
     void TestRangeIterator();
     void TestStringIterator();
     void TestElementIterator();
+    void TestUTS61Examples();
 
 private:
 

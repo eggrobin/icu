@@ -32,6 +32,16 @@
 #include "cmemory.h"
 #include "hash.h"
 
+#define TEST_ASSERT_SUCCESS_FOR(source, status)                                                         \
+    UPRV_BLOCK_MACRO_BEGIN {                                                                            \
+        if (U_FAILURE(status)) {                                                                        \
+            std::string utf8;                                                                           \
+            dataerrln(UnicodeString("Failure in ") + __FILE__ + ":" + __LINE__ + ", for " #source "=" + \
+                      expression + ": " + u_errorName(status));                                         \
+        }                                                                                               \
+    }                                                                                                   \
+    UPRV_BLOCK_MACRO_END
+
 #define TEST_ASSERT_SUCCESS(status) UPRV_BLOCK_MACRO_BEGIN { \
     if (U_FAILURE(status)) { \
         dataerrln("fail in file \"%s\", line %d: \"%s\"", __FILE__, __LINE__, \
@@ -110,6 +120,7 @@ UnicodeSetTest::runIndexedTest(int32_t index, UBool exec,
     TESTCASE_AUTO(TestRangeIterator);
     TESTCASE_AUTO(TestStringIterator);
     TESTCASE_AUTO(TestElementIterator);
+    TESTCASE_AUTO(TestUTS61Examples);
     TESTCASE_AUTO_END;
 }
 
@@ -4333,4 +4344,128 @@ void UnicodeSetTest::TestElementIterator() {
 
     // begin() & end() return USetElementIterator for which explicit APIs are tested via USet
     // in a header-only unit test file.
+}
+
+void UnicodeSetTest::TestUTS61Examples() {
+    UErrorCode status = U_ZERO_ERROR;
+    // Examples in https://www.unicode.org/reports/tr61/#Escaped-Elements-Semantics.
+    for (const auto expression : std::vector<std::u16string_view>{
+             uR"([\\])",
+             uR"([\134])",
+             uR"([\x5C])",
+             uR"([\u005C])",
+             uR"([\x{05C}])",
+             uR"([\U0000005C])",
+         }) {
+        const UnicodeSet set(expression, status);
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\\') {
+            UnicodeString s;
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + uR"( ≠ [\\])");
+        }
+        status = U_ZERO_ERROR;
+    }
+    for (const auto &expression : std::vector<std::u16string_view>{
+             uR"([\a])",
+             uR"([\7])",
+             uR"([\x7])",
+         }) {
+        const UnicodeSet set(expression, status);
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\u0007') {
+            UnicodeString s;
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + uR"( ≠ [\u0007])");
+        }
+        status = U_ZERO_ERROR;
+    }
+    UnicodeSet set(uR"([\x{110000}])", status);
+    if (status != U_MALFORMED_UNICODE_ESCAPE) {
+        errln(UnicodeString("Unexpected status ") + u_errorName(status));
+    }
+    status = U_ZERO_ERROR;
+    // Note in https://www.unicode.org/reports/tr61/#Named-Elements.
+    UnicodeSet propertyBasedUCDIdentifierCharacters(
+        uR"([\p{block=Basic_Latin} & [\p{L}\p{Nd}\p{Pc}\p{Pd}\p{Zs}]])", status);
+    TEST_ASSERT_SUCCESS(status);
+    UnicodeSet ucdIdentifierCharacters(uR"([A-Za-z0-9\N{SPACE}_-])", status);
+    TEST_ASSERT_SUCCESS(status);
+    if (propertyBasedUCDIdentifierCharacters != ucdIdentifierCharacters) {
+        UnicodeString s, t;
+        errln(propertyBasedUCDIdentifierCharacters.toPattern(s) + u" ≠ " +
+              ucdIdentifierCharacters.toPattern(t));
+    }
+    // Examples in https://www.unicode.org/reports/tr61/#Named-Elements-Semantics.
+    for (const auto expression : std::vector<std::u16string_view>{
+             uR"([\N{SPACE}])",
+             uR"([\xN{0020:SPACE}])",
+             uR"([\xcN{20: :SPACE}])",  // TODO(egg): Incompatible syntax; maybe xlN?
+         }) {
+        UnicodeSet set(expression, status);
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U' ') {
+            UnicodeString s;
+            errln(expression + " = " + set.complement().complement().toPattern(s) + uR"( ≠ [\u0020])");
+        }
+        status = U_ZERO_ERROR;
+    }
+    for (const auto expression : std::vector<std::u16string_view>{
+             uR"([\N{THIS IS NOT A CHARACTER}])",
+             uR"([\xN{0A:LATIN CAPITAL LETTER A}])",
+             uR"([\xcN{41:a:LATIN CAPITAL LETTER A}])",
+         }) {
+        UnicodeSet set(expression, status);
+        if (status != U_ILLEGAL_ARGUMENT_ERROR) {
+            errln(UnicodeString("Unexpected status ") + u_errorName(status) + " for " + expression);
+        }
+        status = U_ZERO_ERROR;
+    }
+    for (const auto [expression, character] : std::vector<std::pair<std::u16string_view, char32_t>>{
+             {uR"([\N{PRESENTATION FORM FOR VERTICAL RIGHT WHITE LENTICULAR BRAKCET}])", U'︘'},
+             {uR"([\N{PRESENTATION FORM FOR VERTICAL RIGHT WHITE LENTICULAR BRACKET}])", U'︘'},
+             {uR"([\N{Latin small ligature o-e}])", U'œ'},
+             {uR"([\N{Hangul jungseong O-E}])", U'ᆀ'},
+             {uR"([\N{Hangul jungseong OE}])", U'ᅬ'},
+         }) {
+        const UnicodeSet set(expression, status);
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != character) {
+            UnicodeString s;
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ [)" +
+                  UnicodeString(static_cast<UChar>(character)) + uR"(])");
+        }
+        status = U_ZERO_ERROR;
+    }
+    // Various examples in https://www.unicode.org/reports/tr61/proposed.html#Negations.
+    const UnicodeSet unassigned("[:Unassigned:]", status);
+    const UnicodeSet assigned("[:^Unassigned:]", status);
+    const UnicodeSet compatibilityDecomposables("[:Decomposition_Type=compat:]", status);
+    const UnicodeSet nonNoncharacters("[:Noncharacter_Code_Point=No:]", status);
+    for (const auto [expression, expected] : std::vector<std::pair<std::u16string_view, const UnicodeSet&>>{
+             // Exteriorly negated:
+             {uR"(\P{Cn})", assigned},
+             {uR"([:^Cn:])", assigned},
+             {uR"(\P{General_Category=Cn})", assigned},
+             {uR"([:^General_Category=Cn:])", assigned},
+             {uR"([:^General_Category≠Cn:])", unassigned},  // Doubly negated.
+             // Interiorly negated:
+             {uR"(\p{General_Category≠Cn})", assigned},
+             {uR"([:General_Category≠Cn:])", assigned},
+             {uR"([:^General_Category≠Cn:])", unassigned}, // Doubly negated.
+             // Non-negated:
+             {uR"(\p{Cn})", unassigned},
+             {uR"(\p{General_Category=Cn})", unassigned},
+             {uR"([:General_Category=Cn:])", unassigned},
+             // Examples from the first note on doubly negated property queries.
+             {uR"(\P{Decomposition_Type≠compat})", compatibilityDecomposables},
+             {uR"(\p{Decomposition_Type=compat})", compatibilityDecomposables},
+             {uR"([:^Noncharacter_Code_Point≠No:])", nonNoncharacters},
+         }) {
+        const UnicodeSet set(expression, status);
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set != expected) {
+            UnicodeString s, t;
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" + expected.toPattern(t));
+        }
+        status = U_ZERO_ERROR;
+    }
 }
