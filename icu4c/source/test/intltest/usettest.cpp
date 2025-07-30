@@ -4432,7 +4432,7 @@ void UnicodeSetTest::TestUTS61Examples() {
         if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != character) {
             UnicodeString s;
             errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  +uR"( ≠ [)" + UnicodeString(static_cast<UChar>(character)) + uR"(])");
+                  + uR"( ≠ [)" + UnicodeString(static_cast<UChar>(character)) + uR"(])");
         }
         status = U_ZERO_ERROR;
     }
@@ -4467,8 +4467,43 @@ void UnicodeSetTest::TestUTS61Examples() {
         if (U_SUCCESS(status) && set != expected) {
             UnicodeString s, t;
             errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  +uR"( ≠ )" + expected.toPattern(t));
+                  + uR"( ≠ )" + expected.toPattern(t));
         }
         status = U_ZERO_ERROR;
+    }
+    // Example in https://www.unicode.org/reports/tr61/proposed.html#Age-Queries,
+    // with [ \P{U6:Cn} \p{U6:Noncharacter_Code_Point} ] computed by the Unicode tools, since
+    // version-qualifier is out of scope for ICU.
+
+    // From https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B+%5CP%7BU6%3ACn%7D+%5Cp%7BU6%3ANoncharacter_Code_Point%7D+%5D&g=&i=.
+    const UnicodeSet age6Expected(
+        uR"([^
+          ͸͹ Ϳ-΃΋΍΢ Ԩ-԰՗՘ ՠֈ֋-֐׈-׏׫-ׯ׵-׿ ؄؅؜؝܎݋݌޲-޿߻-߿࠮࠯࠿࡜࡝࡟-ࣿ
+          ॸঀ঄঍঎঑঒঩঱঳-঵঺঻৅৆৉৊৏-৖৘-৛৞৤৥ ৼ-਀਄਋-਎਑਒਩਱਴਷਺਻਽੃-੆੉੊੎-੐੒-੘੝੟-੥
+          ੶-઀઄઎઒઩઱઴઺઻૆૊૎૏૑-૟૤૥ ૰૲-଀଄଍଎଑଒଩଱଴଺଻୅୆୉୊୎-୕୘-୛୞୤୥୸-஁஄஋-஍஑஖-஘஛஝஠-஢஥-஧஫-஭஺-஽௃-௅௉௎௏௑-௖௘-௥௻-ఀఄ఍఑఩
+          ఴ఺-఼౅౉౎-౔౗ ౚ-౟౤౥౰-౷ ಀಁ಄಍಑಩಴಺಻೅೉೎-೔೗-ೝ೟೤೥೰ೳ-ഁ ഄ഍഑഻഼൅൉ ൏-ൖ൘-ൟ൤൥
+          ൶-൸඀ඁ඄඗-඙඲඼඾඿෇-෉෋-෎෕෗෠-෱෵-฀฻-฾๜-຀຃຅ ຆຉ຋ ຌຎ-ຓຘຠ຤຦ ຨຩຬ຺຾຿໅໇໎໏໚໛
+          ໞ-໿཈཭-཰྘྽࿍࿛-࿿჆-჏ ჽ-ჿ቉቎቏቗቙቞቟኉኎኏኱኶኷኿዁዆዇዗጑጖጗፛፜፽-፿᎚-᎟ Ᏽ-᏿᚝-᚟ ᛱ-᛿ ᜍ᜕-ᜟ᜷-᜿᝔-᝟᝭᝱᝴-᝿៞៟៪-៯៺-៿᠏᠚-᠟
+          ᡸ-᡿᢫-᢯᣶-᣿ ᤝ-᤟᤬-᤯᤼-᤿᥁-᥃᥮᥯᥵-᥿᦬-᦯᧊-᧏᧛-᧝᨜᨝᩟᩽᩾᪊-᪏᪚-᪟᪮-᫿ ᭌ-᭏᭽-᭿᮫-ᮭᮺ-ᮿ᯴-᯻᰸-᰺᱊-᱌ ᲀ-᳏
+          ᳳ-᳿ᷧ-᷻἖἗἞἟὆὇὎὏὘὚὜὞὾὿᾵῅῔῕῜῰῱῵῿⁥-⁩⁲⁳₏₝-₟ ₺-⃏⃱-⃿ ↊-↏ ⏴-⏿␧-␿⑋-⑟
+          ✀⟋⟍⭍-⭏⭚-⯿ⰯⱟⳲ-⳸⴦-⴯ ⵦ-⵮⵱-⵾⶗-⶟⶧⶯⶷⶿⷇⷏⷗⷟ ⸲-⹿⺚⻴-⻿⿖-⿯ ⿼-⿿぀゗゘㄀-㄄ ㄮ-㄰㆏ ㆻ-ㆿ㇤-㇯㈟
+          ㋿䶶-䶿鿌-鿿꒍-꒏꓇-꓏꘬-꘿ꙴ-ꙻ Ꚙ-ꚟ꛸-꛿ ꞏꞒ-ꞟꞪ-ꟹ꠬-꠯꠺-꠿꡸-꡿ꣅ-꣍꣚-꣟ ꣼-ꣿ꥔-꥞꥽-꥿꧎꧚-꧝
+          ꧠ-꧿꨷-꨿꩎꩏꩚꩛ꩼ-ꩿ꫃-꫚ ꫠ-꬀꬇꬈꬏꬐꬗-꬟꬧꬯-ꮿ꯮꯯꯺-꯿힤-힯퟇-퟊퟼-퟿ 郞隷﩮﩯﫚-﫿﬇-﬒﬘-﬜﬷﬽﬿﭂﭅ ﯂-﯒
+          ﵀-﵏﶐﶑﷈-﷏ ﷾﷿︚-︟︧-︯﹓﹧﹬-﹯﹵﻽﻾＀﾿-￁￈￉￐￑￘￙￝-￟￧￯-￸𐀌𐀧𐀻𐀾𐁎𐁏𐁞-𐁿𐃻-𐃿𐄃-𐄆𐄴-𐄶 𐆋-𐆏 𐆜-𐇏𐇾-𐉿𐊝-𐊟𐋑-𐋿
+          𐌟𐌤-𐌯𐍋-𐍿𐎞𐏄-𐏇𐏖-𐏿𐒞𐒟𐒪-𐟿𐠆𐠇𐠉𐠶𐠹-𐠻𐠽𐠾𐡖 𐡠-𐣿𐤜-𐤞𐤺-𐤾𐥀-𐧿𐨄𐨇-𐨋𐨔𐨘 𐨴-𐨷𐨻-𐨾 𐩈-𐩏𐩙-𐩟 𐪀-𐫿𐬶-𐬸𐭖𐭗𐭳-𐭷
+          𐮀-𐯿𐱉-𐹟𐹿-𐿿𑁎-𑁑𑁰-𑁿𑃂-𑿿 𒍯-𒏿 𒑣-𒑯 𒑴-𒿿 𓐯-𖟿𖨹-𚿿 𛀂-𜿿𝃶-𝃿𝄧𝄨 𝇞-𝇿𝉆-𝋿𝍗-𝍟
+          𝍲-𝏿𝑕𝒝𝒠𝒡𝒣𝒤𝒧𝒨𝒭𝒺𝒼𝓄𝔆𝔋𝔌𝔕𝔝𝔺𝔿𝕅𝕇-𝕉𝕑𝚦𝚧𝟌𝟍 𝠀-𞿿🀬-🀯🂔-🂟🂯🂰 🂿🃀🃐 🃠-🃿 🄋-🄏🄯🅪-🅯🆛-🇥🈃-🈏
+          🈻-🈿🉉-🉏🉒-🋿 🌡-🌯🌶🍽-🍿🎔-🎟🏅🏋-🏟🏱-🏿🐿👁📸📽-📿
+          🔾-🕏🕨-🗺😀😑😕😗😙😛😟😦😧😬😮😯😴🙁-🙄 🙐-🙿🛆-🛿 🝴-🿽 𪛗-𪛿 𫜵-𫜿𫠞-𯟿𯨞-𯿽
+          𰀀-𿿽񀀀-񏿽񐀀-񟿽񠀀-񯿽񰀀-񿿽򀀀-򏿽򐀀-򟿽򠀀-򯿽򰀀-򿿽󀀀-󏿽󐀀-󟿽󠀀󠀂-󠀟󠂀-󠃿󠇰-󯿽
+        ])",
+        status);
+    const std::u16string_view expression = uR"(\p{Age=6.0})";
+    const UnicodeSet age6(expression, status);
+    TEST_ASSERT_SUCCESS_FOR(expression, status);
+    if (U_SUCCESS(status) && age6 != age6Expected) {
+        UnicodeString s, t;
+        errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" +
+              age6Expected.toPattern(t));
     }
 }
