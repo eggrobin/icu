@@ -286,9 +286,10 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
     UnicodeSetPointer scratch;
     RuleCharacterIterator::Pos backup;
 
+    enum class SyntacticCategory : int8_t { StringLiteralOrNone, RangeElement, UnicodeSet };
+    SyntacticCategory lastItem = SyntacticCategory::StringLiteralOrNone;
     // mode: 0=before [, 1=between [...], 2=after ]
-    // lastItem: 0=none, 1=char, 2=set
-    int8_t lastItem = 0, mode = 0;
+    int8_t mode = 0;
     UChar32 lastChar = 0;
     char16_t op = 0;
 
@@ -297,9 +298,9 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
     clear();
 
     while (mode != 2 && !chars.atEnd()) {
-        U_ASSERT((lastItem == 0 && op == 0) ||
-                 (lastItem == 1 && (op == 0 || op == u'-')) ||
-                 (lastItem == 2 && (op == 0 || op == u'-' || op == u'&')));
+        U_ASSERT((lastItem == None && op == 0) ||
+                 (lastItem == RangeElement && (op == 0 || op == u'-')) ||
+                 (lastItem == Set && (op == 0 || op == u'-' || op == u'&')));
 
         UChar32 c = 0;
         UBool literal = false;
@@ -377,7 +378,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
         // table.
 
         if (setMode != 0) {
-            if (lastItem == 1) {
+            if (lastItem == SyntacticCategory::RangeElement) {
                 if (op != 0) {
                     // syntaxError(chars, "Char expected after operator");
                     ec = U_MALFORMED_SET;
@@ -385,7 +386,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 }
                 add(lastChar, lastChar);
                 _appendToPat(patLocal, lastChar, false);
-                lastItem = 0;
+                lastItem = SyntacticCategory::StringLiteralOrNone;
                 op = 0;
             }
 
@@ -437,7 +438,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
             }
 
             op = 0;
-            lastItem = 2;
+            lastItem = SyntacticCategory::UnicodeSet;
 
             continue;
         }
@@ -455,7 +456,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
         if (!literal) {
             switch (c) {
             case u']':
-                if (lastItem == 1) {
+                if (lastItem == SyntacticCategory::RangeElement) {
                     add(lastChar, lastChar);
                     _appendToPat(patLocal, lastChar, false);
                 }
@@ -473,7 +474,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 continue;
             case u'-':
                 if (op == 0) {
-                    if (lastItem != 0) {
+                    if (lastItem != SyntacticCategory::StringLiteralOrNone) {
                         op = static_cast<char16_t>(c);
                         continue;
                     } else {
@@ -492,7 +493,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 ec = U_MALFORMED_SET;
                 return;
             case u'&':
-                if (lastItem == 2 && op == 0) {
+                if (lastItem == SyntacticCategory::UnicodeSet && op == 0) {
                     op = static_cast<char16_t>(c);
                     continue;
                 }
@@ -509,11 +510,11 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                     ec = U_MALFORMED_SET;
                     return;
                 }
-                if (lastItem == 1) {
+                if (lastItem == SyntacticCategory::RangeElement) {
                     add(lastChar, lastChar);
                     _appendToPat(patLocal, lastChar, false);
                 }
-                lastItem = 0;
+                lastItem = SyntacticCategory::StringLiteralOrNone;
                 buf.truncate(0);
                 {
                     UBool ok = false;
@@ -558,7 +559,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                         break; // literal '$'
                     }
                     if (anchor && op == 0) {
-                        if (lastItem == 1) {
+                        if (lastItem == SyntacticCategory::RangeElement) {
                             add(lastChar, lastChar);
                             _appendToPat(patLocal, lastChar, false);
                         }
@@ -583,11 +584,11 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
         // ("a").
 
         switch (lastItem) {
-        case 0:
-            lastItem = 1;
+        case SyntacticCategory::StringLiteralOrNone:
+            lastItem = SyntacticCategory::RangeElement;
             lastChar = c;
             break;
-        case 1:
+        case SyntacticCategory::RangeElement:
             if (op == u'-') {
                 if (lastChar >= c) {
                     // Don't allow redundant (a-a) or empty (b-a) ranges;
@@ -600,7 +601,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 _appendToPat(patLocal, lastChar, false);
                 patLocal.append(op);
                 _appendToPat(patLocal, c, false);
-                lastItem = 0;
+                lastItem = SyntacticCategory::StringLiteralOrNone;
                 op = 0;
             } else {
                 add(lastChar, lastChar);
@@ -608,14 +609,14 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 lastChar = c;
             }
             break;
-        case 2:
+        case SyntacticCategory::UnicodeSet:
             if (op != 0) {
                 // syntaxError(chars, "Set expected after operator");
                 ec = U_MALFORMED_SET;
                 return;
             }
             lastChar = c;
-            lastItem = 1;
+            lastItem = SyntacticCategory::RangeElement;
             break;
         }
     }
