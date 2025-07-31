@@ -16,6 +16,9 @@
 #ifndef _TESTUNISET
 #define _TESTUNISET
 
+#include <string_view>
+#include <variant>
+
 #include "unicode/unistr.h"
 #include "unicode/uniset.h"
 #include "unicode/ucnv_err.h"
@@ -204,6 +207,9 @@ private:
     void testSpanContents(const UnicodeSetWithStrings *sets[4], uint32_t whichSpans, const char *testName);
     void testSpanUTF16String(const UnicodeSetWithStrings *sets[4], uint32_t whichSpans, const char *testName);
     void testSpanUTF8String(const UnicodeSetWithStrings *sets[4], uint32_t whichSpans, const char *testName);
+
+    void expectUnicodeSetExpression(std::u16string_view expression,
+                                    std::variant<UnicodeSet, UErrorCode> expected);
 
     UConverter *openUTF8Converter();
 

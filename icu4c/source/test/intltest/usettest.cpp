@@ -3608,6 +3608,24 @@ void UnicodeSetTest::testSpanUTF8String(const UnicodeSetWithStrings *sets[4], ui
     testSpan(sets, s, UPRV_LENGTHOF(s)-1, false, (whichSpans&~SPAN_UTF16), testName, 1);
 }
 
+void UnicodeSetTest::expectUnicodeSetExpression(std::u16string_view expression,
+                                                std::variant<UnicodeSet, UErrorCode> expected) {
+    UErrorCode status = U_ZERO_ERROR;
+    const UnicodeSet set(expression, status);
+    if (std::holds_alternative<UnicodeSet>(expected)) {
+        TEST_ASSERT_SUCCESS_FOR(expression, status);
+        if (U_SUCCESS(status) && set != std::get<UnicodeSet>(expected)) {
+            UnicodeString s, t;
+            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                  +uR"( ≠ )" + std::get<UnicodeSet>(expected).toPattern(t));
+        }
+    } else {
+        if (status != std::get<UErrorCode>(expected)) {
+            errln(UnicodeString("Unexpected status ") + u_errorName(status) + " for " + expression);
+        }
+    }
+}
+
 // Take a set of span options and multiply them so that
 // each portion only has one of the options a, b and c.
 // If b==0, then the set of options is just modified with mask and a.
@@ -4347,6 +4365,8 @@ void UnicodeSetTest::TestElementIterator() {
     // in a header-only unit test file.
 }
 
+
+
 void UnicodeSetTest::TestUTS61Examples() {
     UErrorCode status = U_ZERO_ERROR;
     // Examples in https://www.unicode.org/reports/tr61/#Escaped-Elements-Semantics.
@@ -4358,34 +4378,16 @@ void UnicodeSetTest::TestUTS61Examples() {
              uR"([\x{05C}])",
              uR"([\U0000005C])",
          }) {
-        const UnicodeSet set(expression, status);
-        TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U'\\')) {
-            UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  uR"( ≠ [\\])");
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, UnicodeSet(U'\\', U'\\'));
     }
     for (const auto &expression : std::vector<std::u16string_view>{
              uR"([\a])",
              uR"([\7])",
              uR"([\x7])",
          }) {
-        const UnicodeSet set(expression, status);
-        TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U'\u0007')) {
-            UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  uR"( ≠ [\u0007])");
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, UnicodeSet(U'\u0007', U'\u0007'));
     }
-    UnicodeSet set(uR"([\x{110000}])", status);
-    if (status != U_MALFORMED_UNICODE_ESCAPE) {
-        errln(UnicodeString("Unexpected status ") + u_errorName(status));
-    }
-    status = U_ZERO_ERROR;
+    expectUnicodeSetExpression(uR"([\x{110000}])", U_MALFORMED_UNICODE_ESCAPE);
     // Note in https://www.unicode.org/reports/tr61/#Named-Elements.
     UnicodeSet propertyBasedUCDIdentifierCharacters(
         uR"([\p{block=Basic_Latin} & [\p{L}\p{Nd}\p{Pc}\p{Pd}\p{Zs}]])", status);
@@ -4399,27 +4401,18 @@ void UnicodeSetTest::TestUTS61Examples() {
     }
     // Examples in https://www.unicode.org/reports/tr61/#Named-Elements-Semantics.
     for (const auto expression : std::vector<std::u16string_view>{
-             uR"([\N{SPACE}])", uR"([\xN{0020:SPACE}])",
+             uR"([\N{SPACE}])",
+             uR"([\xN{0020:SPACE}])",
              uR"([\xcN{20: :SPACE}])", // TODO(egg): Incompatible syntax; maybe xlN?
          }) {
-        UnicodeSet set(expression, status);
-        TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U' ')) {
-            UnicodeString s;
-            errln(expression + " = " + set.complement().complement().toPattern(s) + uR"( ≠ [\u0020])");
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, UnicodeSet(U' ', U' '));
     }
     for (const auto expression : std::vector<std::u16string_view>{
              uR"([\N{THIS IS NOT A CHARACTER}])",
              uR"([\xN{0A:LATIN CAPITAL LETTER A}])",
              uR"([\xcN{41:a:LATIN CAPITAL LETTER A}])",
          }) {
-        UnicodeSet set(expression, status);
-        if (status != U_ILLEGAL_ARGUMENT_ERROR) {
-            errln(UnicodeString("Unexpected status ") + u_errorName(status) + " for " + expression);
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, U_ILLEGAL_ARGUMENT_ERROR);
     }
     for (const auto [expression, character] : std::vector<std::pair<std::u16string_view, char32_t>>{
              {uR"([\N{PRESENTATION FORM FOR VERTICAL RIGHT WHITE LENTICULAR BRAKCET}])", U'︘'},
@@ -4428,14 +4421,7 @@ void UnicodeSetTest::TestUTS61Examples() {
              {uR"([\N{Hangul jungseong O-E}])", U'ᆀ'},
              {uR"([\N{Hangul jungseong OE}])", U'ᅬ'},
          }) {
-        const UnicodeSet set(expression, status);
-        TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != character)) {
-            UnicodeString s;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  + uR"( ≠ [)" + UnicodeString(static_cast<UChar>(character)) + uR"(])");
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, UnicodeSet(character, character));
     }
     // Various examples in https://www.unicode.org/reports/tr61/#Negations.
     const UnicodeSet unassigned("[:Unassigned:]", status);
@@ -4463,14 +4449,7 @@ void UnicodeSetTest::TestUTS61Examples() {
              {uR"(\p{Decomposition_Type=compat})", compatibilityDecomposables},
              {uR"([:^Noncharacter_Code_Point≠No:])", nonNoncharacters},
          }) {
-        const UnicodeSet set(expression, status);
-        TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && set != expected) {
-            UnicodeString s, t;
-            errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                  + uR"( ≠ )" + expected.toPattern(t));
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, expected);
     }
     // Example in https://www.unicode.org/reports/tr61/#Age-Queries,
     // with [ \P{U6:Cn} \p{U6:Noncharacter_Code_Point} ] computed by the Unicode tools, since
@@ -4499,48 +4478,19 @@ void UnicodeSetTest::TestUTS61Examples() {
           𰀀-𿿽񀀀-񏿽񐀀-񟿽񠀀-񯿽񰀀-񿿽򀀀-򏿽򐀀-򟿽򠀀-򯿽򰀀-򿿽󀀀-󏿽󐀀-󟿽󠀀󠀂-󠀟󠂀-󠃿󠇰-󯿽
         ])",
         status);
-    const std::u16string_view expression = uR"(\p{Age=6.0})";
-    const UnicodeSet age6(expression, status);
-    TEST_ASSERT_SUCCESS_FOR(expression, status);
-    if (U_SUCCESS(status) && age6 != age6Expected) {
-        UnicodeString s, t;
-        errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" +
-              age6Expected.toPattern(t));
-    }
+    expectUnicodeSetExpression(uR"(\p{Age=6.0})", age6Expected);
     // Examples from the big review note under https://www.unicode.org/reports/tr61/tr61-1.html#Set-Operations.
     for (const auto [expression, expected] :
          std::vector<std::pair<std::u16string_view, std::variant<UnicodeSet, UErrorCode>>>{
-             {uR"(\N{SPACE})", UnicodeSet(R"([\u0020])", status)},
-             {uR"([[\u0000-\u007F]-\N{TILDE}])", UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
-             {uR"([\N{SPACE}-~])", UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
+             {uR"(\N{SPACE})", UnicodeSet(uR"([\u0020])", status)},
+             {uR"([[\u0000-\u007F]-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
+             {uR"([\N{SPACE}-~])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
              {uR"([[\u0000-\u007F]&\N{TILDE}])", U_MALFORMED_SET},
-             {uR"([\N{SPACE}-\N{TILDE}])",
-              UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
+             {uR"([\N{SPACE}-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
          }) {
-        if (std::holds_alternative<UnicodeSet>(expected)) {
-            const UnicodeSet set(expression, status);
-            TEST_ASSERT_SUCCESS_FOR(expression, status);
-            if (U_SUCCESS(status) && set != std::get<UnicodeSet>(expected)) {
-                UnicodeString s, t;
-                errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
-                      +uR"( ≠ )" + std::get<UnicodeSet>(expected).toPattern(t));
-            }
-        } else {
-            if (status != std::get<UErrorCode>(expected)) {
-                errln(UnicodeString("Unexpected status ") + u_errorName(status) + " for " + expression);
-            }
-        }
-        status = U_ZERO_ERROR;
+        expectUnicodeSetExpression(expression, expected);
     }
     // https://www.unicode.org/reports/tr61/#Set-Operations-Semantics
-    UnicodeSet range(uR"([a-z])", status);
-    TEST_ASSERT_SUCCESS(status);
-    if (range.size() != 26) {
-        errln(UnicodeString("Unexpected size ") + range.size());
-    }
-    UnicodeSet reversedRange(uR"([z-a])", status);
-    if (status != U_MALFORMED_SET) {
-        errln(UnicodeString("Unexpected status ") + u_errorName(status));
-    }
-    status = U_ZERO_ERROR;
+    expectUnicodeSetExpression(u"[a-z]", UnicodeSet(u"[abcdefghijklmnopqrstuvwxyz]", status));
+    expectUnicodeSetExpression(u"[z-a]", U_MALFORMED_SET);
 }
