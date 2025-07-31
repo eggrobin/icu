@@ -4479,7 +4479,8 @@ void UnicodeSetTest::TestUTS61Examples() {
         ])",
         status);
     expectUnicodeSetExpression(uR"(\p{Age=6.0})", age6Expected);
-    // Examples from the big review note under https://www.unicode.org/reports/tr61/tr61-1.html#Set-Operations.
+    // Examples from the first big review note under
+    // https://www.unicode.org/reports/tr61/tr61-1.html#Set-Operations.
     for (const auto [expression, expected] :
          std::vector<std::pair<std::u16string_view, std::variant<UnicodeSet, UErrorCode>>>{
              {uR"(\N{SPACE})", UnicodeSet(uR"([\u0020])", status)},
@@ -4487,6 +4488,17 @@ void UnicodeSetTest::TestUTS61Examples() {
              {uR"([\N{SPACE}-~])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
              {uR"([[\u0000-\u007F]&\N{TILDE}])", U_MALFORMED_SET},
              {uR"([\N{SPACE}-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
+         }) {
+        expectUnicodeSetExpression(expression, expected);
+    }
+    // Examples from the second big review note under
+    // https://www.unicode.org/reports/tr61/tr61-1.html#Set-Operations.
+    for (const auto [expression, expected] :
+         std::vector<std::pair<std::u16string_view, std::variant<UnicodeSet, UErrorCode>>>{
+             {uR"([{aa}-{zz}])", U_MALFORMED_SET},
+             {uR"([{a}-{z}])", UnicodeSet(u"[a-z]", status)},
+             {uR"([\p{Latn} - \p{Changes_When_NFKC_Casefolded} & [{a}-{ä}]])", UnicodeSet(uR"([aáàâäã b-z])", status)},
+             {uR"([\p{Latn} - \p{Changes_When_NFKC_Casefolded} & [{a}-{q̈}]])", U_MALFORMED_SET},
          }) {
         expectUnicodeSetExpression(expression, expected);
     }
