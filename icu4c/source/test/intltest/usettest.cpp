@@ -4505,4 +4505,8 @@ void UnicodeSetTest::TestUTS61Examples() {
     // https://www.unicode.org/reports/tr61/#Set-Operations-Semantics
     expectUnicodeSetExpression(u"[a-z]", UnicodeSet(u"[abcdefghijklmnopqrstuvwxyz]", status));
     expectUnicodeSetExpression(u"[z-a]", U_MALFORMED_SET);
+
+    // Additional examples that ICU parses nonconformantly.
+    // TODO(egg): Add these to UTS #56.
+    expectUnicodeSetExpression(uR"([{\N{EGG}\N{EGG}\N{EGG}}])", UnicodeSet(u"[{🥚🥚🥚}]", status));
 }
