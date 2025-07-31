@@ -16,6 +16,7 @@
 
 #include <string_view>
 #include <unordered_map>
+#include <variant>
 
 #include "unicode/utypes.h"
 #include "usettest.h"
@@ -4359,7 +4360,7 @@ void UnicodeSetTest::TestUTS61Examples() {
          }) {
         const UnicodeSet set(expression, status);
         TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\\') {
+        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U'\\')) {
             UnicodeString s;
             errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
                   uR"( ≠ [\\])");
@@ -4373,7 +4374,7 @@ void UnicodeSetTest::TestUTS61Examples() {
          }) {
         const UnicodeSet set(expression, status);
         TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U'\u0007') {
+        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U'\u0007')) {
             UnicodeString s;
             errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
                   uR"( ≠ [\u0007])");
@@ -4403,7 +4404,7 @@ void UnicodeSetTest::TestUTS61Examples() {
          }) {
         UnicodeSet set(expression, status);
         TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != U' ') {
+        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != U' ')) {
             UnicodeString s;
             errln(expression + " = " + set.complement().complement().toPattern(s) + uR"( ≠ [\u0020])");
         }
@@ -4429,7 +4430,7 @@ void UnicodeSetTest::TestUTS61Examples() {
          }) {
         const UnicodeSet set(expression, status);
         TEST_ASSERT_SUCCESS_FOR(expression, status);
-        if (U_SUCCESS(status) && set.size() != 1 || set.charAt(0) != character) {
+        if (U_SUCCESS(status) && (set.size() != 1 || set.charAt(0) != character)) {
             UnicodeString s;
             errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
                   + uR"( ≠ [)" + UnicodeString(static_cast<UChar>(character)) + uR"(])");
@@ -4506,8 +4507,38 @@ void UnicodeSetTest::TestUTS61Examples() {
         errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) + +uR"( ≠ )" +
               age6Expected.toPattern(t));
     }
+    // Examples from the big review note under https://www.unicode.org/reports/tr61/tr61-1.html#Set-Operations.
+    for (const auto [expression, expected] :
+         std::vector<std::pair<std::u16string_view, std::variant<UnicodeSet, UErrorCode>>>{
+             {uR"(\N{SPACE})", UnicodeSet(R"([\u0020])", status)},
+             {uR"([[\u0000-\u007F]-\N{TILDE}])", UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
+             {uR"([\N{SPACE}-~])", UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
+             {uR"([[\u0000-\u007F]&\N{TILDE}])", U_MALFORMED_SET},
+             {uR"([\N{SPACE}-\N{TILDE}])",
+              UnicodeSet(R"([\u0000-\u007D\u007E])", status)},
+         }) {
+        if (std::holds_alternative<UnicodeSet>(expected)) {
+            const UnicodeSet set(expression, status);
+            TEST_ASSERT_SUCCESS_FOR(expression, status);
+            if (U_SUCCESS(status) && set != std::get<UnicodeSet>(expected)) {
+                UnicodeString s, t;
+                errln(expression + " = " + UnicodeSet(set).complement().complement().toPattern(s) +
+                      +uR"( ≠ )" + std::get<UnicodeSet>(expected).toPattern(t));
+            }
+        } else {
+            if (status != std::get<UErrorCode>(expected)) {
+                errln(UnicodeString("Unexpected status ") + u_errorName(status) + " for " + expression);
+            }
+        }
+        status = U_ZERO_ERROR;
+    }
     // https://www.unicode.org/reports/tr61/#Set-Operations-Semantics
-    UnicodeSet(uR"([z-a])", status);
+    UnicodeSet range(uR"([a-z])", status);
+    TEST_ASSERT_SUCCESS(status);
+    if (range.size() != 26) {
+        errln(UnicodeString("Unexpected size ") + range.size());
+    }
+    UnicodeSet reversedRange(uR"([z-a])", status);
     if (status != U_MALFORMED_SET) {
         errln(UnicodeString("Unexpected status ") + u_errorName(status));
     }
