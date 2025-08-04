@@ -1038,9 +1038,9 @@ UnicodeSet& UnicodeSet::applyPropertyPattern(const UnicodeString& pattern,
                                              UErrorCode &ec) {
     int32_t pos = ppos.getIndex();
 
-    UBool posix = false; // true for [:pat:], false for \p{pat} \P{pat} \N{pat}
-    UBool isName = false; // true for \N{pat}, o/w false
-    UBool invert = false;
+    bool posix = false; // true for [:pat:], false for \p{pat} \P{pat} \N{pat}
+    bool isName = false; // true for \N{pat}, o/w false
+    bool invert = false;
 
     if (U_FAILURE(ec)) return *this;
 
@@ -1089,12 +1089,20 @@ UnicodeSet& UnicodeSet::applyPropertyPattern(const UnicodeString& pattern,
     // Look for an '=' sign.  If this is present, we will parse a
     // medium \p{gc=Cf} or long \p{GeneralCategory=Format}
     // pattern.
-    int32_t equals = pattern.indexOf(u'=', pos);
+    int32_t equals = pattern.indexOf(u'=', pos, close - pos);
+    int32_t notEquals = pattern.indexOf(u'≠', pos, close - pos);
     UnicodeString propName, valueName;
-    if (equals >= 0 && equals < close && !isName) {
+    if (!isName && (equals >= 0 || notEquals >= 0)) {
+        const int32_t queryOperator =
+            equals >= 0 ? notEquals >= 0 ? std::min(equals, notEquals)
+                                         : equals
+                        : notEquals;
+        if (pattern.char32At(queryOperator) == u'≠') {
+            invert = !invert;
+        }
         // Equals seen; parse medium/long pattern
-        pattern.extractBetween(pos, equals, propName);
-        pattern.extractBetween(equals+1, close, valueName);
+        pattern.extractBetween(pos, queryOperator, propName);
+        pattern.extractBetween(queryOperator+1, close, valueName);
     }
 
     else {
