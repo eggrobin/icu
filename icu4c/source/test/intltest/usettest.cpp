@@ -4484,10 +4484,10 @@ void UnicodeSetTest::TestUTS61Examples() {
     for (const auto [expression, expected] :
          std::vector<std::pair<std::u16string_view, std::variant<UnicodeSet, UErrorCode>>>{
              {uR"(\N{SPACE})", UnicodeSet(uR"([\u0020])", status)},
-             {uR"([[\u0000-\u007F]-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
-             {uR"([\N{SPACE}-~])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
+             {uR"([[\u0000-\u007F]-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007F])", status)},
+             {uR"([\N{SPACE}-~])", UnicodeSet(uR"([\u0020-\u007E])", status)},
              {uR"([[\u0000-\u007F]&\N{TILDE}])", U_MALFORMED_SET},
-             {uR"([\N{SPACE}-\N{TILDE}])", UnicodeSet(uR"([\u0000-\u007D\u007E])", status)},
+             {uR"([\N{SPACE}-\N{TILDE}])", UnicodeSet(uR"([\u0020-\u007E])", status)},
          }) {
         expectUnicodeSetExpression(expression, expected);
     }
