@@ -286,32 +286,30 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
     UnicodeSetPointer scratch;
     RuleCharacterIterator::Pos backup;
 
-    enum class SyntacticCategory : int8_t { StringLiteralOrNone, RangeElement, UnicodeSet };
-    SyntacticCategory lastItem = SyntacticCategory::StringLiteralOrNone;
-    // mode: 0=before [, 1=between [...], 2=after ]
-    int8_t mode = 0;
+    enum class Nonterminal : int8_t { UnicodeSet, Terms, Restriction, Intersection, Difference, RangeElement, Range, End };
+    enum class LexicalElement : int8_t {
+        Unknown,                     // The lexical element has not yet been classified.
+        PropertyQueryOrNamedElement, // A property-query.
+        UnionOrComplementOpening,    // Either [ or [^.
+        Variable,
+    };
+    Nonterminal rule = Nonterminal::UnicodeSet;
+    LexicalElement lookahead = LexicalElement::Unknown;
     UChar32 lastChar = 0;
-    char16_t op = 0;
 
     UBool invert = false;
 
     clear();
 
-    while (mode != 2 && !chars.atEnd()) {
-        U_ASSERT((lastItem == None && op == 0) ||
-                 (lastItem == RangeElement && (op == 0 || op == u'-')) ||
-                 (lastItem == Set && (op == 0 || op == u'-' || op == u'&')));
-
+    while (rule != Nonterminal::End && !chars.atEnd()) {
         UChar32 c = 0;
         UBool literal = false;
         UnicodeSet* nested = nullptr; // alias - do not delete
 
         // -------- Check for property pattern
 
-        // setMode: 0=none, 1=unicodeset, 2=propertypat, 3=preparsed
-        int8_t setMode = 0;
         if (resemblesPropertyPattern(chars, opts)) {
-            setMode = 2;
+            lookahead = LexicalElement::PropertyQueryOrNamedElement;
         }
 
         // -------- Parse '[' of opening delimiter OR nested set.
@@ -329,12 +327,11 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
             if (U_FAILURE(ec)) return;
 
             if (c == u'[' && !literal) {
-                if (mode == 1) {
+                if (rule != Nonterminal::UnicodeSet) {
                     chars.setPos(backup); // backup
-                    setMode = 1;
+                    // We have eliminated [: and [:^, so [ is either the start of [ or [^.
+                    lookahead = LexicalElement::UnionOrComplementOpening;
                 } else {
-                    // Handle opening '[' delimiter
-                    mode = 1;
                     patLocal.append(u'[');
                     chars.getPos(backup); // prepare to backup
                     c = chars.next(opts, literal, ec); 
@@ -346,11 +343,22 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                         c = chars.next(opts, literal, ec);
                         if (U_FAILURE(ec)) return;
                     }
+                    rule = Nonterminal::Terms;
+                    // Either via
+                    //   UnicodeSet ::= [ Union ] ::= [ Terms ]
+                    // or
+                    //   UnicodeSet ::= Complement ::= [^ Union ] ::= [^ Terms ]
+                    // possibly with UnescapedHyphenMinus either side of the Terms,
+                    // see below.
                     // Fall through to handle special leading '-';
                     // otherwise restart loop for nested [], \p{}, etc.
                     if (c == u'-') {
                         literal = true;
                         // Fall through to handle literal '-' below
+                        // We have Union ::= UnescapedHyphenMinus Terms
+                        //                 | UnescapedHyphenMinus
+                        // We will add the unescaped HYPHEN-MINUS below,
+                        // and come back to the beginning of the loop expecting Terms.
                     } else {
                         chars.setPos(backup); // backup
                         continue;
@@ -367,7 +375,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                     // casting away const, but `nested' won't be modified
                     // (important not to modify stored set)
                     nested = const_cast<UnicodeSet*>(ms);
-                    setMode = 3;
+                    lookahead = LexicalElement::Variable;
                 }
             }
         }
@@ -377,13 +385,14 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
         // previously been parsed and was looked up in the symbol
         // table.
 
-        if (setMode != 0) {
-            if (lastItem == SyntacticCategory::RangeElement) {
-                if (op != 0) {
-                    // syntaxError(chars, "Char expected after operator");
-                    ec = U_MALFORMED_SET;
-                    return;
-                }
+        if (lookahead != LexicalElement::Unknown) {
+            if (rule == Nonterminal::Range) {
+                // syntaxError(chars, "Char expected after operator");
+                ec = U_MALFORMED_SET;
+                return;
+            }
+
+            { // TODO
                 add(lastChar, lastChar);
                 _appendToPat(patLocal, lastChar, false);
                 lastItem = SyntacticCategory::StringLiteralOrNone;
@@ -402,48 +411,55 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                 }
                 nested = scratch.pointer();
             }
-            switch (setMode) {
-            case 1:
+            switch (lookahead) {
+            case LexicalElement::UnionOrComplementOpening:
                 nested->applyPattern(chars, symbols, patLocal, options, caseClosure, depth + 1, ec);
                 break;
-            case 2:
+            case LexicalElement::PropertyQueryOrNamedElement:
                 chars.skipIgnored(opts);
                 nested->applyPropertyPattern(chars, patLocal, ec);
                 if (U_FAILURE(ec)) return;
                 break;
-            case 3: // `nested' already parsed
+            case LexicalElement::Variable: // `nested' already parsed
                 nested->_toPattern(patLocal, false);
                 break;
             }
 
             usePat = true;
 
-            if (mode == 0) {
+            if (rule == Nonterminal::UnicodeSet) {
                 // Entire pattern is a category; leave parse loop
                 *this = *nested;
-                mode = 2;
+                rule == Nonterminal::End;
                 break;
             }
 
-            switch (op) {
-            case u'-':
+            // We just parsed a UnicodeSet `nested`.
+            switch (rule) {
+            case Nonterminal::Difference:
+                // Difference ::= Restriction - UnicodeSet
                 removeAll(*nested);
                 break;
-            case u'&':
+            case Nonterminal::Intersection:
+                // Intersection ::= Restriction & UnicodeSet
                 retainAll(*nested);
                 break;
-            case 0:
+            case Nonterminal::Terms:
+                // Terms ::= Terms Term
+                // with
+                // Term ::= Restriction ::= UnicodeSet
                 addAll(*nested);
                 break;
             }
 
-            op = 0;
-            lastItem = SyntacticCategory::UnicodeSet;
+            // Pop back up to
+            // Restriction ::= Difference | Intersection | UnicodeSet.
+            rule = Nonterminal::Restriction;
 
             continue;
         }
 
-        if (mode == 0) {
+        if (rule == Nonterminal::UnicodeSet) {
             // syntaxError(chars, "Missing '['");
             ec = U_MALFORMED_SET;
             return;
@@ -461,18 +477,30 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
                     _appendToPat(patLocal, lastChar, false);
                 }
                 // Treat final trailing '-' as a literal
-                if (op == u'-') {
-                    add(op, op);
-                    patLocal.append(op);
-                } else if (op == u'&') {
+                if (rule == Nonterminal::Difference) {
+                    // Not actually a Difference, the - was an UnescapedHyphenMinus.
+                    add(u'-', u'-');
+                    patLocal.append(u'-');
+                } else if (rule != Nonterminal::Restriction && rule != Nonterminal::Terms) {
                     // syntaxError(chars, "Trailing '&'");
                     ec = U_MALFORMED_SET;
                     return;
                 }
                 patLocal.append(u']');
-                mode = 2;
+                rule = Nonterminal::End;
                 continue;
             case u'-':
+                if (rule == Nonterminal::Restriction) {
+                  // Difference ::= Restriction - UnicodeSet
+                  // We now expect UnicodeSet.
+                  // The grammar is LALR(2) here, we could actually have
+                  //   Restriction UnescapedHyphenMinus ]
+                  // at the end of [ Union ] or Complement.
+                  // We will recover if we find ].
+                  rule = Nonterminal::Difference;
+                } else if (rule == Nonterminal::RangeElement) {
+                  rule = Nonterminal::Range;
+                }
                 if (op == 0) {
                     if (lastItem != SyntacticCategory::StringLiteralOrNone) {
                         op = static_cast<char16_t>(c);
@@ -621,7 +649,7 @@ void UnicodeSet::applyPattern(RuleCharacterIterator& chars,
         }
     }
 
-    if (mode != 2) {
+    if (mode != Expecting::End) {
         // syntaxError(chars, "Missing ']'");
         ec = U_MALFORMED_SET;
         return;
