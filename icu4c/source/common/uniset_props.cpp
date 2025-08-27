@@ -315,8 +315,9 @@ class UnicodeSet::Lexer {
             // bracketed-element) which is mapped to a set.  This may also be an unescaped '{', in which
             // case bracketed-element and string-literal are inaccessible.
             STAND_IN,
+            END_OF_TEXT,
         };
-        static constexpr std::array<std::u16string_view, 8> category_names_{{
+        static constexpr std::array<std::u16string_view, 9> category_names_{{
             u"set-operator",
             u"literal-element",
             u"escaped-element",
@@ -325,6 +326,7 @@ class UnicodeSet::Lexer {
             u"string-literal",
             u"property-query",
             u"stand-in",
+            u"(end of text)",
         }};
         LexicalElement(Category category, UnicodeString string, RuleCharacterIterator::Pos after,
                        UErrorCode errorCode, const UnicodeSet *standIn, std::u16string_view sourceText)
@@ -417,6 +419,11 @@ class UnicodeSet::Lexer {
 
     LexicalElement nextToken() {
         UErrorCode errorCode = U_ZERO_ERROR;
+        chars_.skipIgnored(charsOptions_);
+        if (chars_.atEnd()) {
+            return LexicalElement(LexicalElement::END_OF_TEXT, {}, getPos(), errorCode,
+                                  /*standIn=*/nullptr, u"");
+        }
         const int32_t start = parsePosition_.getIndex();
         const RuleCharacterIterator::Pos before = getPos();
         // First try to get the next character without parsing escapes.
@@ -1335,33 +1342,6 @@ UBool UnicodeSet::resemblesPropertyPattern(const UnicodeString& pattern,
 
     // Look for an opening [:, [:^, \p, or \P
     return isPOSIXOpen(pattern, pos) || isPerlOpen(pattern, pos) || isNameOpen(pattern, pos);
-}
-
-/**
- * Return true if the given iterator appears to point at a
- * property pattern.  Regardless of the result, return with the
- * iterator unchanged.
- * @param chars iterator over the pattern characters.  Upon return
- * it will be unchanged.
- * @param iterOpts RuleCharacterIterator options
- */
-UBool UnicodeSet::resemblesPropertyPattern(RuleCharacterIterator& chars,
-                                           int32_t iterOpts) {
-    // NOTE: literal will always be false, because we don't parse escapes.
-    UBool result = false, literal;
-    UErrorCode ec = U_ZERO_ERROR;
-    iterOpts &= ~RuleCharacterIterator::PARSE_ESCAPES;
-    RuleCharacterIterator::Pos pos;
-    chars.getPos(pos);
-    UChar32 c = chars.next(iterOpts, literal, ec);
-    if (c == u'[' || c == u'\\') {
-        UChar32 d = chars.next(iterOpts & ~RuleCharacterIterator::SKIP_WHITESPACE,
-                               literal, ec);
-        result = (c == u'[') ? (d == u':') :
-                               (d == u'N' || d == u'p' || d == u'P');
-    }
-    chars.setPos(pos);
-    return result && U_SUCCESS(ec);
 }
 
 /**

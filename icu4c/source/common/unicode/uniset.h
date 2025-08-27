@@ -1799,9 +1799,6 @@ private:
     static UBool resemblesPropertyPattern(const UnicodeString& pattern,
                                           int32_t pos);
 
-    static UBool resemblesPropertyPattern(RuleCharacterIterator& chars,
-                                          int32_t iterOpts);
-
     /**
      * Parse the given property pattern at the given parse position
      * and set this UnicodeSet to the result.
