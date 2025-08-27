@@ -18,6 +18,9 @@
 *   Character property dependent functions moved here from uniset.cpp
 */
 
+#include <array>
+#include <optional>
+
 #include "unicode/utypes.h"
 #include "unicode/uniset.h"
 #include "unicode/parsepos.h"
@@ -44,7 +47,6 @@
 #include "umutex.h"
 #include "uassert.h"
 #include "hash.h"
-#include <optional>
 
 U_NAMESPACE_USE
 
@@ -242,7 +244,7 @@ class UnicodeSet::Lexer {
         }
 
         bool isNamedElement() const {
-            return U_SUCCESS(errorCode_) && category_ == PROPERTY_QUERY;
+            return U_SUCCESS(errorCode_) && category_ == NAMED_ELEMENT;
         }
 
         bool isSetOperator(const char16_t op) const {
@@ -258,19 +260,20 @@ class UnicodeSet::Lexer {
         }
 
         std::optional<UnicodeString> element() const {
-            if (U_SUCCESS(errorCode_) && category_) {
+            if (U_SUCCESS(errorCode_) &&
+                (category_ == LITERAL_ELEMENT || category_ == ESCAPED_ELEMENT ||
+                 category_ == BRACKETED_ELEMENT || category_ == STRING_LITERAL)) {
+                return string_;
             }
+            return std::nullopt;
         }
 
-        UChar32 codePoint(UErrorCode &errorCode) const {
-            if (!U_FAILURE(errorCode)) {
-                errorCode = errorCode;
+        std::optional<UChar32> codePoint() const {
+            if (U_SUCCESS(errorCode_) && (category_ == LITERAL_ELEMENT || category_ == ESCAPED_ELEMENT ||
+                                          category_ == BRACKETED_ELEMENT)) {
+                return string_.char32At(0);
             }
-            return codePoint_;
-        }
-
-        bool escaped() const {
-            return escaped_;
+            return std::nullopt;
         }
 
         const UnicodeSet *standIn() const {
@@ -278,11 +281,29 @@ class UnicodeSet::Lexer {
                 return nullptr;
             }
             return standIn_;
-        };
+        }
+
+        const UErrorCode& errorCode() const{
+          return errorCode_;
+        }
+
+        UnicodeString debugString() const {
+            UnicodeString result;
+            if (U_FAILURE(errorCode_)) {
+                result.append(u"Ill-formed token (");
+                result.append(UnicodeString::fromUTF8(u_errorName(errorCode_)));
+                result.append(u"), possibly ");
+            }
+            result.append(category_names_[category_]);
+            result.append(u" '");
+            result.append(sourceText_);
+            result.append(u"'");
+            return result;
+        }
 
       private:
         // See https://unicode.org/reports/tr61#Lexical-Elements.
-        enum Category {
+        enum Category : std::uint8_t {
             SET_OPERATOR,
             LITERAL_ELEMENT,
             ESCAPED_ELEMENT,
@@ -295,15 +316,26 @@ class UnicodeSet::Lexer {
             // case bracketed-element and string-literal are inaccessible.
             STAND_IN,
         };
+        static constexpr std::array<std::u16string_view, 8> category_names_{{
+            u"set-operator",
+            u"literal-element",
+            u"escaped-element",
+            u"named-element",
+            u"bracketed-element",
+            u"string-literal",
+            u"property-query",
+            u"stand-in",
+        }};
         LexicalElement(Category category, UnicodeString string, RuleCharacterIterator::Pos after,
-              UErrorCode errorCode, const UnicodeSet *standIn)
+                       UErrorCode errorCode, const UnicodeSet *standIn, std::u16string_view sourceText)
             : category_(category), string_(std::move(string)), after_(after), errorCode_(errorCode),
-              standIn_(standIn) {}
+              standIn_(standIn), sourceText_(sourceText) {}
         Category category_;
         UnicodeString string_;
         RuleCharacterIterator::Pos after_;
         UErrorCode errorCode_;
         const UnicodeSet *standIn_;
+        std::u16string_view sourceText_;
 
         friend class Lexer;
     };
@@ -332,21 +364,27 @@ class UnicodeSet::Lexer {
 
     const LexicalElement &lookahead2() {
         if (!ahead2_.has_value()) {
+            // Note that if someone has called `getCharacterIterator` and played with the result,
+            // `before` may not actually be before `ahead_`, but we do not actually depend on this here,
+            // since we start from ahead_.after_.
             const RuleCharacterIterator::Pos before = getPos();
             chars_.setPos(lookahead().after_);
-            ahead_.emplace(nextToken());
+            ahead2_.emplace(nextToken());
             chars_.setPos(before);
         }
-        return *ahead_;
+        return *ahead2_;
     }
 
-    // For use in functions that take the `RuleCharacterIterator` directly; clears the lookahead cache so
-    // that any advancement of the `RuleCharacterIterator` is taken into account by subsequent calls to
-    // `lookahead`.  The resulting `RuleCharacterIterator` must not be used once `lookahead` or
-    // `lookahead2` has been called again.
+    // For use in older functions that take the `RuleCharacterIterator` directly.
+    // Any advancement of the resulting `RuleCharacterIterator` has no effect on the result of subsequent
+    // calls to `lookahead`, `lookahead2`, `advance`, or `acceptSetOperator`.
+    // Once `advance` or `acceptSetOperator` has been called, the result of a call to
+    // `getCharacterIterator` preceding the call to `advance` or `acceptSetOperator` must no longer be
+    // used.
     RuleCharacterIterator &getCharacterIterator() {
-        ahead_.reset();
-        ahead2_.reset();
+        // Make sure we compute a correct `ahead_.after_` so we do not depend on the current value of
+        // `getPos()` for lexing.
+        lookahead();
         return chars_;
     }
 
@@ -359,6 +397,10 @@ class UnicodeSet::Lexer {
     }
 
     void advance() {
+        // If someone called `getCharacterIterator`, we are now changing the character iterator under
+        // their feet; further, we may not have an `ahead_`, so if they keep playing with it we would be
+        // working on incorrect values of `getPos`.  This is why the result of `getCharacterIterator`
+        // must no longer be used.
         chars_.setPos(lookahead().after_);
         ahead_ = ahead2_;
         ahead2_.reset();
@@ -375,6 +417,7 @@ class UnicodeSet::Lexer {
 
     LexicalElement nextToken() {
         UErrorCode errorCode = U_ZERO_ERROR;
+        const int32_t start = parsePosition_.getIndex();
         const RuleCharacterIterator::Pos before = getPos();
         // First try to get the next character without parsing escapes.
         UBool unusedEscaped;
@@ -382,6 +425,7 @@ class UnicodeSet::Lexer {
             chars_.next(charsOptions_ & ~RuleCharacterIterator::PARSE_ESCAPES, unusedEscaped, errorCode);
         // '[', named-element, and property-query cannot be disabled by stand-in.
         if (first == u'[' || first == u'\\') {
+            const RuleCharacterIterator::Pos afterFirst = getPos();
             // This could be a property-query or named-element.
             const UChar32 second = chars_.next(charsOptions_ & ~(RuleCharacterIterator::PARSE_ESCAPES |
                                                                  RuleCharacterIterator::SKIP_WHITESPACE),
@@ -402,12 +446,16 @@ class UnicodeSet::Lexer {
                             if (last == u'}') {
                                 return LexicalElement(LexicalElement::NAMED_ELEMENT, {}, getPos(),
                                                       errorCode,
-                                                      /*standIn=*/nullptr);
+                                                      /*standIn=*/nullptr,
+                                                      std::u16string_view(pattern_).substr(
+                                                          start, parsePosition_.getIndex() - start));
                             }
                         }
                     }
-                    return LexicalElement(LexicalElement::NAMED_ELEMENT, {}, getPos(), U_MALFORMED_SET,
-                                          /*standIn=*/nullptr);
+                    return LexicalElement(
+                        LexicalElement::NAMED_ELEMENT, {}, getPos(), U_ILLEGAL_ARGUMENT_ERROR,
+                        /*standIn=*/nullptr,
+                        std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
                 }
                 // Do not skip whitespace so we can recognize unspaced :].  Lex escapes and
                 // named-element: while ICU does not support string-valued properties and thus has no
@@ -420,8 +468,10 @@ class UnicodeSet::Lexer {
                                     unusedEscaped, errorCode);
                     if (third != u'{') {
                         return LexicalElement(LexicalElement::PROPERTY_QUERY, {}, getPos(),
-                                              U_MALFORMED_SET,
-                                              /*standIn=*/nullptr);
+                                              U_ILLEGAL_ARGUMENT_ERROR,
+                                              /*standIn=*/nullptr,
+                                              std::u16string_view(pattern_).substr(
+                                                  start, parsePosition_.getIndex() - start));
                     }
                 }
                 RuleCharacterIterator::Pos beforePenultimate = getPos();
@@ -456,8 +506,10 @@ class UnicodeSet::Lexer {
                             }
                             if (!namedElementOK) {
                                 return LexicalElement(LexicalElement::NAMED_ELEMENT, {}, getPos(),
-                                                      U_MALFORMED_SET,
-                                                      /*standIn=*/nullptr);
+                                                      U_ILLEGAL_ARGUMENT_ERROR,
+                                                      /*standIn=*/nullptr,
+                                                      std::u16string_view(pattern_).substr(
+                                                          start, parsePosition_.getIndex() - start));
                             }
                         } else {
                             // There must be an escaped-element starting at beforePenultimate.  Go
@@ -471,18 +523,27 @@ class UnicodeSet::Lexer {
                     } else if ((first == u'[' && penultimateUnescaped == u':' &&
                                 lastUnescaped == u']') ||
                                (first == u'\\' && lastUnescaped == u'}')) {
-                        return LexicalElement(LexicalElement::PROPERTY_QUERY, {}, getPos(), errorCode,
-                                              /*standIn=*/nullptr);
+                        return LexicalElement(
+                            LexicalElement::PROPERTY_QUERY, {}, getPos(), errorCode,
+                            /*standIn=*/nullptr,
+                            std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
                     }
                     beforePenultimate = beforeLast;
                     penultimateUnescaped = lastUnescaped;
                 }
-                return;
+                return LexicalElement(
+                    LexicalElement::PROPERTY_QUERY, {}, getPos(), U_ILLEGAL_ARGUMENT_ERROR,
+                    /*standIn=*/nullptr,
+                    std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
             }
+            // Not a property-query.
+            chars_.setPos(afterFirst);
         }
         if (first == u'[') {
-            return LexicalElement(LexicalElement::SET_OPERATOR, UnicodeString(u'['), getPos(), errorCode,
-                                  /*standIn=*/nullptr);
+            return LexicalElement(
+                LexicalElement::SET_OPERATOR, UnicodeString(u'['), getPos(), errorCode,
+                /*standIn=*/nullptr,
+                std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
         }
 
         if (first == u'\\') {
@@ -490,50 +551,62 @@ class UnicodeSet::Lexer {
             chars_.setPos(before);
             UChar32 codePoint = chars_.next(charsOptions_, unusedEscaped, errorCode);
             const UnicodeSet *const standIn =
-                dynamic_cast<const UnicodeSet *>(symbols_->lookupMatcher(codePoint));
-            return LexicalElement(standIn == nullptr ? LexicalElement::ESCAPED_ELEMENT
-                                                     : LexicalElement::STAND_IN,
-                                  standIn == nullptr ? UnicodeString(codePoint) : UnicodeString(),
-                                  getPos(),
-                                  errorCode, standIn);
+                symbols_ == nullptr
+                    ? nullptr
+                    : dynamic_cast<const UnicodeSet *>(symbols_->lookupMatcher(codePoint));
+            return LexicalElement(
+                standIn == nullptr ? LexicalElement::ESCAPED_ELEMENT : LexicalElement::STAND_IN,
+                standIn == nullptr ? UnicodeString(codePoint) : UnicodeString(), getPos(), errorCode,
+                standIn, std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
         }
-        if (const UnicodeSet *const standIn =
+        if (symbols_ != nullptr) {
+            const UnicodeSet *const standIn =
                 dynamic_cast<const UnicodeSet *>(symbols_->lookupMatcher(first));
-            standIn != nullptr) {
-            return LexicalElement(LexicalElement::STAND_IN, {}, getPos(), errorCode, standIn);
+            if (standIn != nullptr) {
+                return LexicalElement(
+                    LexicalElement::STAND_IN, {}, getPos(), errorCode, standIn,
+                    std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
+            }
         }
 
         switch (first) {
         case u'&':
         case u'-':
-        case u'[':
         case u']':
         case u'^':
         case u'$':
             // We make $ a set-operator to handle the ICU extensions involving $.
-            return LexicalElement(LexicalElement::SET_OPERATOR, UnicodeString(first), getPos(),
-                                  errorCode,
-                                  /*standIn=*/nullptr);
+            return LexicalElement(
+                LexicalElement::SET_OPERATOR, UnicodeString(first), getPos(), errorCode,
+                /*standIn=*/nullptr,
+                std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
         case u'{': {
             UnicodeString string;
             UBool escaped;
             UChar32 next;
+            int32_t codePointCount = 0;
             while (!chars_.atEnd()) {
                 next = chars_.next(charsOptions_, escaped, errorCode);
                 if (!escaped && next == u'}') {
-                    return LexicalElement(string.length() == 1 ? LexicalElement::BRACKETED_ELEMENT
-                                                               : LexicalElement::STRING_LITERAL,
-                                          std::move(string), getPos(), errorCode,
-                                          /*standIn=*/nullptr);
+                    return LexicalElement(
+                        codePointCount == 1 ? LexicalElement::BRACKETED_ELEMENT
+                                            : LexicalElement::STRING_LITERAL,
+                        std::move(string), getPos(), errorCode,
+                        /*standIn=*/nullptr,
+                        std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
                 }
                 string.append(next);
+                codePointCount += 1;
             }
-            return LexicalElement(LexicalElement::STRING_LITERAL, {}, getPos(), U_MALFORMED_SET,
-                                  /*standIn=*/nullptr);
+            return LexicalElement(
+                LexicalElement::STRING_LITERAL, {}, getPos(), U_MALFORMED_SET,
+                /*standIn=*/nullptr,
+                std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
         }
         default:
-            return LexicalElement(LexicalElement::LITERAL_ELEMENT, UnicodeString(first), getPos(),
-                                  errorCode, nullptr);
+            return LexicalElement(
+                LexicalElement::LITERAL_ELEMENT, UnicodeString(first), getPos(), errorCode, nullptr,
+                std::u16string_view(pattern_).substr(start, parsePosition_.getIndex() - start));
         }
     }
 
@@ -550,7 +623,7 @@ namespace {
 
 constexpr int32_t MAX_DEPTH = 100;
 
-#define U_DEBUGGING_UNICODESET_PARSING 0
+#define U_DEBUGGING_UNICODESET_PARSING 1
 
 #if U_DEBUGGING_UNICODESET_PARSING
 
@@ -573,11 +646,15 @@ constexpr int32_t MAX_DEPTH = 100;
         static_assert(functionName.substr(0, 5) == "parse");                                            \
         std::string actualUTF8;                                                                         \
         std::string contextUTF8;                                                                        \
-        printf("*** Expected %s, got '%s' %s\n", (expected),                                            \
+        printf("*** Expected %s, got %s %s\n", (expected),                                              \
                UnicodeString(actual).toUTF8String(actualUTF8).c_str(),                                  \
                lexer.getPositionForDebugging().toUTF8String(contextUTF8).c_str());                      \
         printf("--- in %s l. %d\n", __func__ + 5, __LINE__);                                            \
-        (ec) = U_MALFORMED_SET;                                                                         \
+        if (U_FAILURE(lexer.lookahead().errorCode())) {                                                 \
+            (ec) = lexer.lookahead().errorCode();                                                       \
+        } else {                                                                                        \
+            (ec) = U_MALFORMED_SET;                                                                     \
+        }                                                                                               \
         return;                                                                                         \
     } while (false)
 
@@ -591,7 +668,11 @@ constexpr int32_t MAX_DEPTH = 100;
     } while (false)
 #define U_UNICODESET_RETURN_WITH_PARSE_ERROR(expected, actual, lexer, ec)                               \
     do {                                                                                                \
-        (ec) = U_MALFORMED_SET;                                                                         \
+        if (U_FAILURE(lexer.lookahead().errorCode())) {                                                 \
+            (ec) = lexer.lookahead().errorCode();                                                       \
+        } else {                                                                                        \
+            (ec) = U_MALFORMED_SET;                                                                     \
+        }                                                                                               \
         return;                                                                                         \
     } while (false)
 
@@ -652,13 +733,16 @@ void UnicodeSet::parseUnicodeSet(Lexer &lexer,
     UnicodeString prettyPrintedPattern;
     if (lexer.lookahead().isPropertyQuery() || lexer.lookahead().isNamedElement()) {
         // UnicodeSet ::= property-query | named-element
-        // NOTE(egg): For now, we throw away the work that the lexer did to find out where the
+        // NOTE(egg): For now, we ignore the work that the lexer did to find out where the
         // property-query or named-element ended in order to retain the existing buggy behaviour of
         // variables containing property queries.
         lexer.getCharacterIterator().skipIgnored(lexer.charsOptions());
         UnicodeSet propertyQuery;
         propertyQuery.applyPropertyPattern(lexer.getCharacterIterator(), prettyPrintedPattern, ec);
         U_UNICODESET_RETURN_IF_ERROR(ec);
+        // But now, we go back to our lexing and advance through the property-query or named-element as
+        // lexed.  If there was no error, the old and the new code should agree on the extent.
+        lexer.advance();
         addAll(propertyQuery);
         preserveSyntaxInPattern = true;
     } else {
@@ -680,7 +764,7 @@ void UnicodeSet::parseUnicodeSet(Lexer &lexer,
                        /*containsRestrictions=*/preserveSyntaxInPattern, ec);
             U_UNICODESET_RETURN_IF_ERROR(ec);
             if (!lexer.acceptSetOperator(u']')) {
-                U_UNICODESET_RETURN_WITH_PARSE_ERROR("]", lexer.lookahead().codePoint(ec), lexer, ec);
+                U_UNICODESET_RETURN_WITH_PARSE_ERROR("]", lexer.lookahead().debugString(), lexer, ec);
             }
             prettyPrintedPattern.append(u']');
         } else if (const UnicodeSet *const standIn = lexer.lookahead().standIn();
@@ -691,7 +775,8 @@ void UnicodeSet::parseUnicodeSet(Lexer &lexer,
                 return;
         } else {
             U_UNICODESET_RETURN_WITH_PARSE_ERROR(R"([: | \p | \P | \N | [)",
-                                                 lexer.lookahead().codePoint(ec), lexer, ec);
+                                                 lexer.lookahead().debugString(), lexer,
+                                                 ec);
         }
     }
 
@@ -841,46 +926,27 @@ void UnicodeSet::parseElements(Lexer &lexer,
     //                | string-literal
     //                | bracketed-element
     if (lexer.lookahead().isBracketedElement() || lexer.lookahead().isStringLiteral()) {
-        add(lexer.lookahead().)
+        add(*lexer.lookahead().element());
+        rebuiltPat.append(u'{');
+        _appendToPat(rebuiltPat, *lexer.lookahead().element(), /*escapeUnprintable=*/false);
+        rebuiltPat.append(u'}');
+        lexer.advance();
+        return;
     }
-    const UChar32 first = lexer.lookahead().codePoint(ec);
-    U_UNICODESET_RETURN_IF_ERROR(ec);
-    if (!lexer.lookahead().escaped()) {
-        switch (first) {
-        case u'-':
-        case u'&':
-        case u'[':
-        case u']':
-        case u'^':
-            U_UNICODESET_RETURN_WITH_PARSE_ERROR("RangeElement | string-literal", first, lexer, ec);
-        case u'{': {
-            lexer.lookahead().moveAfter();
-            rebuiltPat.append(u'{');
-            UnicodeString string;
-            while (!lexer.atEnd()) {
-                if (lexer.lookahead().acceptUnescaped('}')) {
-                    rebuiltPat.append(u'}');
-                    add(string);
-                    return;
-                }
-                const UChar32 c = lexer.lookahead().codePoint(ec);
-                U_UNICODESET_RETURN_IF_ERROR(ec);
-                lexer.lookahead().moveAfter();
-                _appendToPat(rebuiltPat, c, /*escapeUnprintable=*/false);
-                string.append(c);
-            }
-            U_UNICODESET_RETURN_WITH_PARSE_ERROR("}", RuleCharacterIterator::DONE, lexer, ec);
-        }
-        case u'}':
-        case u'$':
-            // Disallowed by UTS #61, but historically accepted by ICU.  This is an extension.
-        default:
-            break;
-        }
+    UChar32 first;
+    if (lexer.lookahead().isSetOperator(u'$')) {
+        // Disallowed by UTS #61, but historically accepted by ICU.  This is an extension.
+        first = u'$';
+    } else if (lexer.lookahead().codePoint().has_value()) {
+        first = *lexer.lookahead().codePoint();
+    } else {
+        U_UNICODESET_RETURN_WITH_PARSE_ERROR("RangeElement | string-literal | bracketed-element",
+                                             lexer.lookahead().debugString(),
+                                             lexer, ec);
     }
-    lexer.lookahead().moveAfter();
+    lexer.advance();
     _appendToPat(rebuiltPat, first, /*escapeUnprintable=*/false);
-    if (!lexer.lookahead().isUnescapedNotStandIn(u'-')) {
+    if (!lexer.lookahead().isSetOperator(u'-')) {
         // No operator,
         // Elements ::= Element
         add(first);
@@ -888,50 +954,37 @@ void UnicodeSet::parseElements(Lexer &lexer,
     }
     // Here the grammar requires two tokens of lookahead to figure out whether the - the operator
     // of a Range or an UnescapedHyphenMinus in the enclosing Union.
-    if (lexer.lookahead().oneMore().isUnescaped(u']')) {
+    if (lexer.lookahead2().isSetOperator(u']')) {
         // The operator is actually an UnescapedHyphenMinus; terminate the Elements before it.
         add(first);
         return;
     }
     // Consume the hyphen-minus.
-    lexer.lookahead().moveAfter();
+    lexer.advance();
     // Elements ::= Range ::= RangeElement - RangeElement
     rebuiltPat.append(u'-');
-    const UChar32 last = lexer.lookahead().codePoint(ec);
-    U_UNICODESET_RETURN_IF_ERROR(ec);
-    if (lexer.lookahead().standIn() != nullptr) {
-        U_UNICODESET_RETURN_WITH_PARSE_ERROR("RangeElement", last, lexer, ec);
-    }
-    if (!lexer.lookahead().escaped()) {
-        switch (last) {
-        case u'-':
-        case u'&':
-        case u'[':
-        case u']':
-        case u'^':
-        case u'{':
-            U_UNICODESET_RETURN_WITH_PARSE_ERROR("RangeElement", last, lexer, ec);
-        case u'$': {
-            // Disallowed by UTS #61, but historically accepted by ICU except at the end of a Union.
-            // This is an extension.
-            if (lexer.lookahead().oneMore().isUnescaped(u']')) {
-                U_UNICODESET_RETURN_WITH_PARSE_ERROR("Term after Range ending in unescaped $", u']',
-                                                     lexer, ec);
-            }
-            break;
+    UChar32 last;
+    if (lexer.lookahead().isSetOperator(u'$')) {
+        // Disallowed by UTS #61, but historically accepted by ICU except at the end of a Union.
+        // This is an extension.
+        last = u'$';
+        if (lexer.lookahead2().isSetOperator(u']')) {
+            U_UNICODESET_RETURN_WITH_PARSE_ERROR("Term after Range ending in unescaped $",
+                                                 lexer.lookahead().debugString() + u" followed by " +
+                                                     lexer.lookahead2().debugString(),
+                                                 lexer, ec);
         }
-        case u'}':
-            // Disallowed by UTS #61, but historically accepted by ICU.  This is an extension.
-        default:
-            break;
-        }
+    } else if (lexer.lookahead().codePoint().has_value()) {
+        last = *lexer.lookahead().codePoint();
+    } else {
+        U_UNICODESET_RETURN_WITH_PARSE_ERROR("RangeElement", lexer.lookahead().debugString(), lexer, ec);
     }
-    lexer.lookahead().moveAfter();
-    _appendToPat(rebuiltPat, last, /*escapeUnprintable=*/false);
     if (last <= first) {
         U_UNICODESET_RETURN_WITH_PARSE_ERROR(
             "first < last in Range", UnicodeString(last) + u"-" + UnicodeString(first), lexer, ec);
     }
+    lexer.advance();
+    _appendToPat(rebuiltPat, last, /*escapeUnprintable=*/false);
     add(first, last);
     return;
 }
