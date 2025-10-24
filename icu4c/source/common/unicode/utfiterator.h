@@ -233,6 +233,24 @@ constexpr bool range = range_type<Range>::value;
 
 #endif
 
+template<typename T>
+struct is_basic_string : std::false_type {};
+
+template<typename... Args>
+struct is_basic_string<std::basic_string<Args...>> : std::true_type {};
+
+template<typename T>
+constexpr bool is_basic_string_v = is_basic_string<T>::value;
+
+template<typename T>
+struct is_basic_string_view : std::false_type {};
+
+template<typename... Args>
+struct is_basic_string_view<std::basic_string_view<Args...>> : std::true_type {};
+
+template<typename T>
+constexpr bool is_basic_string_view_v = is_basic_string_view<T>::value;
+
 /** @internal */
 template<typename CP32, bool skipSurrogates>
 class CodePointsIterator {
@@ -1867,21 +1885,18 @@ struct UTFStringCodePointsAdaptor
     /** @internal */
     template<typename Range>
     auto operator()(Range &&unitRange) const {
+        if constexpr ((std::is_lvalue_reference_v<Range> &&
+                       prv::is_basic_string_v<std::decay_t<Range>>) ||
+                      prv::is_basic_string_view_v<std::decay_t<Range>>) {
+            using CodeUnitView = std::basic_string_view<typename std::decay_t<Range>::value_type>;
+            return UTFStringCodePoints<CP32, behavior, CodeUnitView>(CodeUnitView(unitRange));
+        } else {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
-        using AllRange = std::ranges::views::all_t<Range>;
-        if constexpr (std::is_same_v<AllRange, std::ranges::ref_view<std::string>>) {
-            return UTFStringCodePoints<CP32, behavior, std::string_view>(std::string_view(unitRange));
-        } else {
             return UTFStringCodePoints<CP32, behavior, AllRange>(std::forward<Range>(unitRange));
-        }
 #else
-        if constexpr (std::is_same_v<Range, std::string &> ||
-                      std::is_same_v<std::decay_t<Range>, std::string_view>) {
-            return UTFStringCodePoints<CP32, behavior, std::string_view>(std::string_view(unitRange));
-        } else {
             return UTFStringCodePoints<CP32, behavior, Range>(std::forward<Range>(unitRange));
-        }
 #endif
+        }
     }
 };
 
@@ -2588,21 +2603,19 @@ struct UnsafeUTFStringCodePointsAdaptor
     /** @internal */
     template<typename Range>
     auto operator()(Range &&unitRange) const {
+        if constexpr ((std::is_lvalue_reference_v<Range> &&
+                       prv::is_basic_string_v<std::decay_t<Range>>) ||
+                      prv::is_basic_string_view_v<std::decay_t<Range>>) {
+            using CodeUnitView = std::basic_string_view<typename std::decay_t<Range>::value_type>;
+            return UnsafeUTFStringCodePoints<CP32, CodeUnitView>(CodeUnitView(unitRange));
+        } else {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
-        using AllRange = std::ranges::views::all_t<Range>;
-        if constexpr (std::is_same_v<AllRange, std::ranges::ref_view<std::string>>) {
-            return UnsafeUTFStringCodePoints<CP32, std::string_view>(std::string_view(unitRange));
-        } else {
+
             return UnsafeUTFStringCodePoints<CP32, AllRange>(std::forward<Range>(unitRange));
-        }
 #else
-        if constexpr (std::is_same_v<Range, std::string &> ||
-                      std::is_same_v<std::decay_t<Range>, std::string_view>) {
-            return UnsafeUTFStringCodePoints<CP32, std::string_view>(std::string_view(unitRange));
-        } else {
             return UnsafeUTFStringCodePoints<CP32, Range>(std::forward<Range>(unitRange));
-        }
 #endif
+        }
     }
 };
 

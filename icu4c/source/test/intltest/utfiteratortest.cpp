@@ -783,16 +783,15 @@ public:
         const std::u16string codeUnits = u"𒀭𒊺𒉀​𒍠𒊩";
         static_assert(std::ranges::contiguous_range<decltype(codeUnits)>);
         auto codePoints = utfStringCodePoints<char32_t, UTF_BEHAVIOR_FFFD>(codeUnits);
-        static_assert(std::is_same_v<decltype(codePoints),
-                                     UTFStringCodePoints<char32_t, UTF_BEHAVIOR_FFFD,
-                                                         std::ranges::ref_view<const std::u16string>>>);
+        static_assert(
+            std::is_same_v<decltype(codePoints),
+                           UTFStringCodePoints<char32_t, UTF_BEHAVIOR_FFFD, std::u16string_view>>);
         static_assert(std::ranges::common_range<decltype(codePoints)>);
         static_assert(std::ranges::bidirectional_range<decltype(codePoints)>);
         static_assert(!std::ranges::random_access_range<decltype(codePoints)>);
         auto unsafeCodePoints = unsafeUTFStringCodePoints<char32_t>(codeUnits);
-        static_assert(std::is_same_v<
-                      decltype(unsafeCodePoints),
-                      UnsafeUTFStringCodePoints<char32_t, std::ranges::ref_view<const std::u16string>>>);
+        static_assert(std::is_same_v<decltype(unsafeCodePoints),
+                                     UnsafeUTFStringCodePoints<char32_t, std::u16string_view>>);
         static_assert(std::ranges::common_range<decltype(unsafeCodePoints)>);
         static_assert(std::ranges::bidirectional_range<decltype(unsafeCodePoints)>);
         static_assert(!std::ranges::random_access_range<decltype(unsafeCodePoints)>);
@@ -842,9 +841,15 @@ public:
         initLong();
         if constexpr (mode == UNSAFE) {
             auto range = unsafeUTFStringCodePoints<UChar32>(test.str);
+            static_assert(
+                std::is_same_v<decltype(range),
+                               UnsafeUTFStringCodePoints<UChar32, std::basic_string_view<Unit>>>);
             testLongLinear<mode, behavior, CONTIG, Unit>(test, range.begin(), range.end());
         } else {
             auto range = utfStringCodePoints<UChar32, behavior>(test.str);
+            static_assert(
+                std::is_same_v<decltype(range),
+                               UTFStringCodePoints<UChar32, behavior, std::basic_string_view<Unit>>>);
             testLongLinear<mode, behavior, CONTIG, Unit>(test, range.begin(), range.end());
         }
     }
@@ -1198,6 +1203,7 @@ extern IntlTest *createUTFIteratorTest() {
 
 template<TestMode mode, typename CP32, UTFIllFormedBehavior behavior, typename StringView>
 void UTFIteratorTest::testBidiIter(StringView piped) {
+    static_assert(icu::header::prv::is_basic_string_view_v<StringView>);
     using Unit = typename StringView::value_type;
     auto parts = split(piped);
     auto joined = join<Unit>(parts);
@@ -1207,9 +1213,12 @@ void UTFIteratorTest::testBidiIter(StringView piped) {
     // "a?ç?🚴" where the ? sequences are ill-formed
     if constexpr (mode == UNSAFE) {
         auto range = unsafeUTFStringCodePoints<CP32>(sv);
+        static_assert(std::is_same_v<decltype(range), UnsafeUTFStringCodePoints<UChar32, StringView>>);
         testBidiIter<mode, CP32, behavior>(sv, parts, range);
     } else {
         auto range = utfStringCodePoints<CP32, behavior>(sv);
+        static_assert(
+            std::is_same_v<decltype(range), UTFStringCodePoints<CP32, behavior, StringView>>);
         testBidiIter<mode, CP32, behavior>(sv, parts, range);
     }
 }
