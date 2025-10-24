@@ -1868,10 +1868,19 @@ struct UTFStringCodePointsAdaptor
     template<typename Range>
     auto operator()(Range &&unitRange) const {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
-        return UTFStringCodePoints<CP32, behavior, std::ranges::views::all_t<Range>>(
-            std::forward<Range>(unitRange));
+        using AllRange = std::ranges::views::all_t<Range>;
+        if constexpr (std::is_same_v<AllRange, std::ranges::ref_view<std::string>>) {
+            return UTFStringCodePoints<CP32, behavior, std::string_view>(std::string_view(unitRange));
+        } else {
+            return UTFStringCodePoints<CP32, behavior, AllRange>(std::forward<Range>(unitRange));
+        }
 #else
-        return UTFStringCodePoints<CP32, behavior, Range>(std::forward<Range>(unitRange));
+        if constexpr (std::is_same_v<Range, std::string &> ||
+                      std::is_same_v<std::decay_t<Range>, std::string_view>) {
+            return UTFStringCodePoints<CP32, behavior, std::string_view>(std::string_view(unitRange));
+        } else {
+            return UTFStringCodePoints<CP32, behavior, Range>(std::forward<Range>(unitRange));
+        }
 #endif
     }
 };
@@ -2580,9 +2589,19 @@ struct UnsafeUTFStringCodePointsAdaptor
     template<typename Range>
     auto operator()(Range &&unitRange) const {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
-        return UnsafeUTFStringCodePoints<CP32, std::ranges::views::all_t<Range>>(std::forward<Range>(unitRange));
+        using AllRange = std::ranges::views::all_t<Range>;
+        if constexpr (std::is_same_v<AllRange, std::ranges::ref_view<std::string>>) {
+            return UnsafeUTFStringCodePoints<CP32, std::string_view>(std::string_view(unitRange));
+        } else {
+            return UnsafeUTFStringCodePoints<CP32, AllRange>(std::forward<Range>(unitRange));
+        }
 #else
-        return UnsafeUTFStringCodePoints<CP32, Range>(std::forward<Range>(unitRange));
+        if constexpr (std::is_same_v<Range, std::string &> ||
+                      std::is_same_v<std::decay_t<Range>, std::string_view>) {
+            return UnsafeUTFStringCodePoints<CP32, std::string_view>(std::string_view(unitRange));
+        } else {
+            return UnsafeUTFStringCodePoints<CP32, Range>(std::forward<Range>(unitRange));
+        }
 #endif
     }
 };
