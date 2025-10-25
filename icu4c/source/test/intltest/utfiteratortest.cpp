@@ -351,6 +351,8 @@ public:
         TESTCASE_AUTO(testOwnership);
         TESTCASE_AUTO(testCPDefaultConstructors);
 
+        TESTCASE_AUTO(testIteratatorCompatibility);
+
         // C++20 ranges with all 2021 defect reports.  There is no separate
         // feature test macro value for https://wg21.link/P2210R2, but 2021'10
         // gets us https://wg21.link/P2415R2 as well as
@@ -1177,6 +1179,18 @@ public:
                 assertEquals("unsafe2[2]", U'ß', iter->codePoint());
             }
         }
+    }
+    void testIteratatorCompatibility() {
+      std::u16string zamin = u"𒀭𒎏𒄈𒋢𒍠𒊩";
+      auto it = unsafeUTFStringCodePoints<char32_t>(zamin).begin();
+      ++it;
+      auto ningirsuBegin = it->begin();
+      std::advance(it, 2);
+      auto ningirsuEnd = it->end();
+      // In order for this to compile, the ningirsuBegin and ningirsuEnd iterators must be std::u16string
+      // iterators.
+      zamin.replace(ningirsuBegin, ningirsuEnd, u"𒊺𒉀");
+      assertEquals("Replacing ningirsu with nisaba", zamin, u"𒀭𒊺𒉀𒍠𒊩");
     }
 
     void testAllCodePoints();
