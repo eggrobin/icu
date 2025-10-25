@@ -1892,7 +1892,7 @@ struct UTFStringCodePointsAdaptor
             return UTFStringCodePoints<CP32, behavior, CodeUnitView>(CodeUnitView(unitRange));
         } else {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
-            return UTFStringCodePoints<CP32, behavior, AllRange>(std::forward<Range>(unitRange));
+            return UTFStringCodePoints<CP32, behavior, std::ranges::views::all_t<Range>>(std::forward<Range>(unitRange));
 #else
             return UTFStringCodePoints<CP32, behavior, Range>(std::forward<Range>(unitRange));
 #endif
@@ -2611,7 +2611,7 @@ struct UnsafeUTFStringCodePointsAdaptor
         } else {
 #if defined(__cpp_lib_ranges) && __cpp_lib_ranges >= 2021'10  // We need https://wg21.link/P2415R2.
 
-            return UnsafeUTFStringCodePoints<CP32, AllRange>(std::forward<Range>(unitRange));
+            return UnsafeUTFStringCodePoints<CP32, std::ranges::views::all_t<Range>>(std::forward<Range>(unitRange));
 #else
             return UnsafeUTFStringCodePoints<CP32, Range>(std::forward<Range>(unitRange));
 #endif
