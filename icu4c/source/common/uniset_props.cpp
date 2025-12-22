@@ -232,7 +232,8 @@ class UnicodeSet::Lexer {
           RuleCharacterIterator &chars,
           uint32_t unicodeSetOptions,
           const SymbolTable *const symbols,
-          UnicodeSet &(UnicodeSet::*caseClosure)(int32_t attribute))
+          UnicodeSet &(UnicodeSet::*caseClosure)(int32_t attribute),
+          bool allowVariables)
         : pattern_(pattern), parsePosition_(parsePosition), chars_(chars),
           unicodeSetOptions_(unicodeSetOptions),
           charsOptions_(RuleCharacterIterator::PARSE_ESCAPES |

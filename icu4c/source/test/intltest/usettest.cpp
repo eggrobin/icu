@@ -1860,9 +1860,13 @@ void UnicodeSetTest::TestSymbolTable() {
             {{{u"privateUse", u"[:Co:]"}}, u"[$privateUse]", U_ZERO_ERROR, u"[[:Co:]]"},
             // Variables cannot piece together a property-query.
             {{{u"sad", u":C"}, {u"surprised", u"o:"}},
-            u"[$sad$surprised]",
-            U_MALFORMED_VARIABLE_DEFINITION,
-            u"[]"},
+             u"[$sad$surprised]",
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[]"},
+            {{{u"x", u"$y"}, {u"y", u"$x"}},
+             u"[[$x][$y]]",
+             U_ZERO_ERROR,
+             uR"([[\$y][\$x]])"},
         }) {
         UErrorCode errorCode = U_ZERO_ERROR;
         TokenSymbolTable symbols(errorCode);
