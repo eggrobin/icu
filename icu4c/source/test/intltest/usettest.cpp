@@ -1761,19 +1761,10 @@ void UnicodeSetTest::TestSymbolTable() {
     // is terminated by null:
     // var, value, var, value,..., input pat., exp. output pat., null
     const char *DATA[] = {
-        "us", "a-z", "[0-1$us]", "[0-1a-z]", nullptr,
         "us", "[a-z]", "[0-1$us]", "[0-1[a-z]]", nullptr,
-        "us", "\\[a\\-z\\]", "[0-1$us]", "[-01\\[\\]az]", nullptr,
-        // Things that probably should not work, but currently do:
-        "open", "[", "$open a-z]", "[a-z]", nullptr,
-        "open", "[", "close", "]", "hyphenMinus", "-",
-            "[ $open a $hyphenMinus z] $hyphenMinus [ c-z $close $hyphenMinus ]",
-            "[[a-z]-[c-z]-]", nullptr,
-        "string", "{", "end", "}", "[ $string Zeichenkette $end ]", "[{Zeichenkette}]", nullptr,
+        // Variables do not expand inside string literals.
+        "us", "[a-z]", "[$us{$us}]", R"([a-z{\$us}])", nullptr,
         "privateUse", "[[:Co:]]", "$privateUse", "[[:Co:]]", nullptr,
-        "smiling", ":-]", "laughing", ":-D",
-            "[ {$smiling} $laughing $smiling",
-            R"([\-\:-D{\:\-\]}])", nullptr,
         nullptr
     };
 
@@ -1819,7 +1810,6 @@ void UnicodeSetTest::TestSymbolTable() {
             errln("FAIL: couldn't construct expected UnicodeSet");
             continue;
         }
-        
         UnicodeString a, b;
         if (us != us2) {
             errln(UnicodeString("Failed, got ") + us.toPattern(a, true) +
@@ -1839,22 +1829,39 @@ void UnicodeSetTest::TestSymbolTable() {
         std::u16string_view expectedPattern;
     };
     for (const auto &[variables, expression, expectedErrorCode, expectedPattern] : std::vector<TestCase>{
-            // You should not do this, but it works.
+            // a-z is neither a single element nor a set (that would be [a-z]).
+            {{{u"us", u"a-z"}}, u"[0-1$us]", U_MALFORMED_VARIABLE_DEFINITION, u"[01]"},
+            // Same with \[a\-z\].
+            {{{u"us", uR"(\[a\-z\])"}}, u"[0-1$us]", U_MALFORMED_VARIABLE_DEFINITION, u"[01]"},
+            // Same with :-D.
+            {{{u"smiling", u":-]"}, {u"laughing", u":-D"}},
+             u"[ {$smiling} $laughing $smiling",
+             U_MALFORMED_VARIABLE_DEFINITION,
+             uR"([{\$smiling}])"},
+            // Variables cannot be partial UnicodeSet expressions.
             {{{u"privateUseOrUnassigned", u"[[:Co:][:Cn:]"}, {u"close", u"]"}},
-            u"$privateUseOrUnassigned$close",
-            U_ZERO_ERROR,
-            u"[[:Co:][:Cn:]]"},
+             u"$privateUseOrUnassigned$close",
+             U_MALFORMED_SET,
+             u"[]"},
+            // Variables cannot be set-operators.
+            {{{u"open", u"["}}, u"$open a-z]", U_MALFORMED_SET, u"[]"},
+            {{{u"open", u"["}, {u"close", u"]"}, {u"hyphenMinus", u"-"}},
+             u"[ $open a $hyphenMinus z] $hyphenMinus [ c-z $close $hyphenMinus ]",
+             U_MALFORMED_SET,
+             u"[]"},
+            // Variables cannot be unpaired string delimiters.
+            {{{u"string", u"{"}, {u"end", u"}"}},
+             u"[$string Zeichenkette $end]",
+             U_MALFORMED_SET,
+             u"[]"},
             // This works and it is fine.
             {{{u"privateUse", u"[[:Co:]]"}}, u"$privateUse", U_ZERO_ERROR, u"[[:Co:]]"},
-            // This should work! But it does not. Note the doubled brackets on the one that works above.
-            // We are not yet inside the variable when we call lookahead(), so we try to parse
-            // $privateUse rather than [:Co:].
-            {{{u"privateUse", u"[:Co:]"}}, u"[$privateUse]", U_ILLEGAL_ARGUMENT_ERROR, u"[]"},
-            // This should not work, and it does not (we try to parse [$sad$surprised] as a
-            // property-query).
+            // This also works now.
+            {{{u"privateUse", u"[:Co:]"}}, u"[$privateUse]", U_ZERO_ERROR, u"[[:Co:]]"},
+            // Variables cannot piece together a property-query.
             {{{u"sad", u":C"}, {u"surprised", u"o:"}},
             u"[$sad$surprised]",
-            U_ILLEGAL_ARGUMENT_ERROR,
+            U_MALFORMED_VARIABLE_DEFINITION,
             u"[]"},
         }) {
         UErrorCode errorCode = U_ZERO_ERROR;
