@@ -623,15 +623,20 @@ class UnicodeSet::Lexer {
                                                            RuleCharacterIterator::SKIP_WHITESPACE),
                                          unusedEscaped, errorCode);
         if (open == u'{') {
-            int32_t start = parsePosition_.getIndex();
+            int32_t nameStart = parsePosition_.getIndex();
             while (!chars_.atEnd() && U_SUCCESS(errorCode)) {
                 UChar32 last = chars_.next(charsOptions_ & ~(RuleCharacterIterator::PARSE_ESCAPES |
                                                              RuleCharacterIterator::SKIP_WHITESPACE),
                                            unusedEscaped, errorCode);
                 if (last == u'}') {
-                    return UnicodeSet().applyPropertyAlias(
+                    UnicodeSet result;
+                    result.applyPropertyAlias(
                         UnicodeString(u"na"),
-                        pattern_.tempSubStringBetween(start, parsePosition_.getIndex() - 1), errorCode);
+                        pattern_.tempSubStringBetween(nameStart, parsePosition_.getIndex() - 1),
+                        errorCode);
+                    result.setPattern(
+                        pattern_.tempSubStringBetween(nameStart - 3, parsePosition_.getIndex()));
+                    return result;
                 }
             }
         }
@@ -650,19 +655,28 @@ class UnicodeSet::Lexer {
         // named-element: while ICU does not support string-valued properties and thus has no
         // use for escapes, we still want to lex through escapes to allow downstream
         // implementations (mostly unicodetools) to implement string-valued properties.
-        const UChar32 third = chars_.next(charsOptions_ & ~(RuleCharacterIterator::PARSE_ESCAPES |
-                                                            RuleCharacterIterator::SKIP_WHITESPACE),
-                                          unusedEscaped, errorCode);
         if (first == u'\\') {
+            const UChar32 third = chars_.next(charsOptions_ & ~(RuleCharacterIterator::PARSE_ESCAPES |
+                                                                RuleCharacterIterator::SKIP_WHITESPACE),
+                                              unusedEscaped, errorCode);
             if (third != u'{') {
                 errorCode = U_ILLEGAL_ARGUMENT_ERROR;
                 return {};
             }
             exteriorlyNegated = second == u'P';
             queryExpressionStart = parsePosition_.getIndex();
-        } else if (third == u'^') {
-            exteriorlyNegated = true;
-            queryExpressionStart = parsePosition_.getIndex();
+        } else {
+            // Skip whitespace here regardless of the options, as ICU used to do that.
+            // TODO(egg): PD UTS #61 does not allow space within [:^ (even though it otherwise specifies
+            // the space-insensitive version of the syntax).  Either the line below needs to change to
+            // match the other branch of the if statement, or PD UTS #61 needs to be fixed.
+            const UChar32 third = chars_.next((charsOptions_ & ~RuleCharacterIterator::PARSE_ESCAPES) |
+                                                  RuleCharacterIterator::SKIP_WHITESPACE,
+                                              unusedEscaped, errorCode);
+            if (third == u'^') {
+                exteriorlyNegated = true;
+                queryExpressionStart = parsePosition_.getIndex();
+            }
         }
         RuleCharacterIterator::Pos beforePenultimate = getPos();
         UChar32 penultimateUnescaped =
@@ -693,7 +707,7 @@ class UnicodeSet::Lexer {
                 lastUnescaped = -1;
             } else if (!queryOperatorPosition.has_value() && lastUnescaped == u'=') {
                 // TODO(egg): Propose and add support for ≠.
-                queryOperatorPosition = parsePosition_.getIndex();
+                queryOperatorPosition = parsePosition_.getIndex() - 1;
             } else if ((first == u'[' && penultimateUnescaped == u':' && lastUnescaped == u']') ||
                        (first == u'\\' && lastUnescaped == u'}')) {
                 // Note that no unescaping is performed here, as ICU does not support string-valued or

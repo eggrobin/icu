@@ -1984,16 +1984,17 @@ void UnicodeSetTest::TestLookupSymbolTable() {
             U_ZERO_ERROR,
             u"[[a-z]-[bc]]",
             u"[ad-z]",
-            {u"zero", u"zero", u'0', u"one", u'1'},
+            {u"zero", u'0', u"one", u'1'},
             {{u"zero", u"0"}, {u"one", u"1"}}},
-            // If the variable expands to multiple symbols, only the first one is sequenced right after
-            // the variable lookup.
+            // A variable that expands to multiple symbols is ill-formed; we
+            // don’t even need to resolve the second symbol, its presence is
+            // enough to fail.
             {u"[$ten]",
-            U_ZERO_ERROR,
-            u"[[bc][a-z]]",
-            u"[a-z]",
-            {u"ten", u"ten", u'1', u'0'},
-            {{u"ten", u"10"}}},
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[]",
+             u"[]",
+             {u"ten", u'1'},
+             {{u"ten", u"10"}}},
             // Substitution of lookupMatcher symbols takes place after unescaping.
             {uR"([!-\u0030])", U_MALFORMED_SET, u"[]", u"[]", {u'!', u'0'}},
             // It does not take place in string literals.
@@ -4643,6 +4644,7 @@ void UnicodeSetTest::TestToPatternOutput() {
             {uR"(\p{P})", uR"(\p{P})"},
             {uR"(\p{gc=P})", uR"(\p{gc=P})"},
             {uR"([: general category = punctuation :])", uR"([: general category = punctuation :])"},
+            // TODO(egg): PDUTS #61 disallows the space before ^.
             {uR"([: ^general category = punctuation :])", uR"([: ^general category = punctuation :])"},
             {uR"(\P{ gc = punctuation })", uR"(\P{ gc = punctuation })"},
             {uR"(\N{ latin small letter a })", uR"(\N{ latin small letter a })"},
