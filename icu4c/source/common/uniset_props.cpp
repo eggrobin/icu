@@ -223,7 +223,7 @@ UBool UnicodeSet::resemblesPattern(const UnicodeString& pattern, int32_t pos) {
 // Implementation: Pattern parsing
 //----------------------------------------------------------------
 
-#define U_DEBUGGING_UNICODESET_PARSING 1
+#define U_DEBUGGING_UNICODESET_PARSING 0
 
 class UnicodeSet::Lexer {
   public:
