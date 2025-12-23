@@ -227,6 +227,12 @@ UBool UnicodeSet::resemblesPattern(const UnicodeString& pattern, int32_t pos) {
 
 class UnicodeSet::Lexer {
   public:
+    // If `allowVariables` is true and `symbols` is not null, variables will be lexed by
+    // `symbols->parseReference` when $ is encountered.  Otherwise, $ is a set-operator by ICU extension.
+    // TODO(egg): Once we stop using `lookupMatcher` (ICU-23297), `allowVariables` can be dropped and we
+    // can just use `symbols != nullptr`; for now we need the symbol table to expand stand-ins inside
+    // variables (which is the only place where we actually use stand-ins), but we do not want to expand
+    // variables inside variables.
     Lexer(const UnicodeString &pattern,
           const ParsePosition &parsePosition,
           RuleCharacterIterator &chars,
@@ -241,7 +247,8 @@ class UnicodeSet::Lexer {
                              ? RuleCharacterIterator::SKIP_WHITESPACE
                              : 0)),
           symbols_(symbols),
-          caseClosure_(caseClosure) {}
+          caseClosure_(caseClosure),
+          allowVariables_(allowVariables) {}
 
     class LexicalElement {
       public:
@@ -468,7 +475,7 @@ class UnicodeSet::Lexer {
             // Not a property-query.
             chars_.setPos(afterFirst);
         }
-        if (first == '$' && symbols_ != nullptr) {
+        if (first == '$' && symbols_ != nullptr && allowVariables_) {
             auto nameEnd = parsePosition_;
             if (UnicodeString name = symbols_->parseReference(pattern_, nameEnd, pattern_.length());
                 !name.isEmpty()) {
@@ -483,11 +490,9 @@ class UnicodeSet::Lexer {
                 }
                 ParsePosition expressionPosition;
                 RuleCharacterIterator expressionIterator(*expression, symbols_, expressionPosition);
-                Lexer expressionLexer(
-                    *expression, expressionPosition, expressionIterator,
-                    unicodeSetOptions_,
-                    symbols_,
-                    caseClosure_);
+                Lexer expressionLexer(*expression, expressionPosition, expressionIterator,
+                                      unicodeSetOptions_, symbols_, caseClosure_,
+                                      /*allowVariables=*/false);
                 auto variableToken = expressionLexer.lookahead();
                 if (variableToken.isSetOperator(u'[')) {
                     UnicodeString rebuiltPattern;
@@ -519,6 +524,9 @@ class UnicodeSet::Lexer {
                     }
                     switch (variableToken.category_) {
                     case LexicalElement::SET_OPERATOR:
+                    case LexicalElement::VARIABLE: // This never happens, since we disallow variables for
+                                                   // the inner lexer.
+                    case LexicalElement::END_OF_TEXT: // An empty variable is invalid.
                         return LexicalElement(LexicalElement::VARIABLE, {}, getPos(),
                                               U_MALFORMED_VARIABLE_DEFINITION, /*standIn=*/nullptr,
                                               /*set=*/{},
@@ -751,6 +759,7 @@ class UnicodeSet::Lexer {
     UnicodeSet &(UnicodeSet::* const caseClosure_)(int32_t attribute);
     std::optional<LexicalElement> ahead_;
     std::optional<LexicalElement> ahead2_;
+    const bool allowVariables_;
 };
 
 namespace {
@@ -838,7 +847,7 @@ void UnicodeSet::applyPattern(const UnicodeString &pattern,
                               UnicodeSet &(UnicodeSet::*caseClosure)(int32_t attribute),
                               UErrorCode &ec) {
     if (U_FAILURE(ec)) return;
-    Lexer lexer(pattern, parsePosition, chars, options, symbols, caseClosure);
+    Lexer lexer(pattern, parsePosition, chars, options, symbols, caseClosure, /*allowVariables=*/true);
     parseUnicodeSet(lexer, rebuiltPat, options, caseClosure, /*depth=*/0, ec);
 }
 

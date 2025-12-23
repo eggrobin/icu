@@ -1828,6 +1828,18 @@ void UnicodeSetTest::TestSymbolTable() {
         UErrorCode expectedErrorCode;
         std::u16string_view expectedPattern;
     };
+    const std::u16string open = u"[a";
+    const std::u16string close = u"]";
+    std::u16string deep = u"[a]";
+    std::u16string deepReference = u"$deep";
+    for (int i = 0; i < 100; ++i) {
+      deep = open + deep + close;
+      deepReference = open + deepReference + close;
+    }
+    const std::u16string deeper = open + deep + close;
+    const std::u16string deeperReference = open + deepReference + close;
+    const std::u16string unfathomableDepths =
+        deepReference.substr(0, 200) + deep + deepReference.substr(205);
     for (const auto &[variables, expression, expectedErrorCode, expectedPattern] : std::vector<TestCase>{
             // a-z is neither a single element nor a set (that would be [a-z]).
             {{{u"us", u"a-z"}}, u"[0-1$us]", U_MALFORMED_VARIABLE_DEFINITION, u"[01]"},
@@ -1863,10 +1875,43 @@ void UnicodeSetTest::TestSymbolTable() {
              u"[$sad$surprised]",
              U_MALFORMED_VARIABLE_DEFINITION,
              u"[]"},
+            // The empty string is neither a set nor an element.
+            {{{u"leer", u""}},
+             u"[$leer]",
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[]"},
+            // The empty string literal is an element.
+            {{{u"leer", u"{}"}},
+             u"[$leer]",
+             U_ZERO_ERROR,
+             u"[{}]"},
+            // Check that we don’t recursively expand variables.
+            // In ICU79 and earlier, this would have been U_ZERO_ERROR with [[\$y][\$x]]; but \$y is
+            // a sequence of elements, so it is not a valid variable value.
             {{{u"x", u"$y"}, {u"y", u"$x"}},
              u"[[$x][$y]]",
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[]"},
+            // Since variable expansion spawns a new parser in the lexer, which is by design unaware
+            // of the outer parser, a variable can be used to double the maximum depth of a
+            // UnicodeSet.  Check that this doesn’t explode the stack, and check that both the
+            // variable and the outer expression can produce an error if they are too deep.
+            {{{u"deep", deep}},
+             deepReference,
              U_ZERO_ERROR,
-             uR"([[\$y][\$x]])"},
+             unfathomableDepths},
+            {{{u"deep", deeper}},
+             deepReference,
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[a]"},
+            {{{u"deep", deep}},
+             deeperReference,
+             U_MALFORMED_SET,
+             u"[a]"},
+            {{{u"deep", deeper}},
+             deeperReference,
+             U_MALFORMED_VARIABLE_DEFINITION,
+             u"[a]"},
         }) {
         UErrorCode errorCode = U_ZERO_ERROR;
         TokenSymbolTable symbols(errorCode);
