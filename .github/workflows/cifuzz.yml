@@ -1,7 +1,9 @@
 name: CIFuzz
 on:
   pull_request:
-    branches: '**'
+    # branches: '**'
+    branches:
+      - main
     paths:
       - '**.c'
       - '**.cc'
@@ -13,7 +15,7 @@ on:
   push:
     branches:
       - main
-      - 'maint/maint*'
+      # - 'maint/maint*'
     paths:
       - '**.c'
       - '**.cc'
