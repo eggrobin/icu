@@ -1525,13 +1525,13 @@ x.x: << virgule >>;
 200: <%spellout-cardinal-masculine< cent[ >>|ième];
 1000: mill[e >%%mille-ordinal>|ième];
 2000: <%%spellout-leading< mill[e >%%mille-ordinal>|ième];
-1000000: million[ >>|ième];
+1000000: [un million >>|millionième];
 2000000: <%%spellout-leading< million[s >>|ième];
-1000000000: milliard[ >>|ième];
+1000000000: [un milliard >>|milliardième];
 2000000000: <%%spellout-leading< milliard[s >>|ième];
-1000000000000: billion[ >>|ième];
+1000000000000: [un billion >>|billionième];
 2000000000000: <%%spellout-leading< billion[s >>|ième];
-1000000000000000: billiard[ >>|ième];
+1000000000000000: [un billiard >>|billiardième];
 2000000000000000: <%%spellout-leading< billiard[s >>|ième];
 1000000000000000000: =#,##0=;
 %spellout-ordinal-masculine-plural:
