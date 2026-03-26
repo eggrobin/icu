@@ -27,6 +27,8 @@
 
 #include <string.h>
 
+#include <iostream>
+
 // import com.ibm.text.RuleBasedNumberFormat;
 // import com.ibm.test.TestFmwk;
 
@@ -1401,6 +1403,208 @@ void
 IntlTestRBNF::TestFrenchSpellout() 
 {
     UErrorCode status = U_ZERO_ERROR;
+    UParseError error;
+    RuleBasedNumberFormat oldRules(URBNF_SPELLOUT, Locale::getFrance(), status);
+    RuleBasedNumberFormat newRules(uR"(
+%%lenient-parse:
+&[last primary ignorable ] << ' ' << ',' << '-' << '­';
+%spellout-numbering-year:
+-x: moins >>;
+x.x: =0.0=;
+0: =%spellout-numbering=;
+1100/100: <%spellout-cardinal-masculine<-cent[ >>|s];
+2000: =%spellout-numbering=;
+%spellout-numbering:
+0: =%spellout-cardinal-masculine=;
+%%et-un:
+1: et-un;
+2: =%spellout-cardinal-masculine=;
+11: et-onze;
+12: =%spellout-cardinal-masculine=;
+%%spellout-leading:
+0: =%spellout-cardinal-masculine=;
+80/20: quatre-vingt[->>];
+100: cent[ >>];
+200: << cent[ >>];
+1000: =%spellout-cardinal-masculine=;
+%spellout-cardinal-masculine:
+-x: moins >>;
+x.x: << virgule >>;
+0: zéro;
+1: un;
+2: deux;
+3: trois;
+4: quatre;
+5: cinq;
+6: six;
+7: sept;
+8: huit;
+9: neuf;
+10: dix;
+11: onze;
+12: douze;
+13: treize;
+14: quatorze;
+15: quinze;
+16: seize;
+17: dix->>;
+20: vingt[->%%et-un>];
+30: trente[->%%et-un>];
+40: quarante[->%%et-un>];
+50: cinquante[->%%et-un>];
+60/20: soixante[->%%et-un>];
+80/20: quatre-vingt[->>|s];
+100: cent[ >>];
+200: << cent[ >>|s];
+1000: mille[ >>];
+2000: <%%spellout-leading< mille[ >>];
+1000000: <%%spellout-leading< $(cardinal,one{million}other{millions})$[ >>];
+1000000000: <%%spellout-leading< $(cardinal,one{milliard}other{milliards})$[ >>];
+1000000000000: <%%spellout-leading< $(cardinal,one{billion}other{billions})$[ >>];
+1000000000000000: <%%spellout-leading< $(cardinal,one{billiard}other{billiards})$[ >>];
+1000000000000000000: =#,##0=;
+%%et-une:
+1: et-une;
+2: =%spellout-cardinal-feminine=;
+11: et-onze;
+12: =%spellout-cardinal-feminine=;
+%spellout-cardinal-feminine:
+-x: moins >>;
+x.x: << virgule >>;
+0: zéro;
+1: une;
+2: =%spellout-cardinal-masculine=;
+20: vingt[->%%et-une>];
+30: trente[->%%et-une>];
+40: quarante[->%%et-une>];
+50: cinquante[->%%et-une>];
+60/20: soixante[->%%et-une>];
+80/20: quatre-vingt[->>|s];
+100: cent[ >>];
+200: <%spellout-cardinal-masculine< cent[ >>|s];
+1000: mille[ >>];
+2000: <%%spellout-leading< mille[ >>];
+1000000: <%%spellout-leading< $(cardinal,one{million}other{millions})$[ >>];
+1000000000: <%%spellout-leading< $(cardinal,one{milliard}other{milliards})$[ >>];
+1000000000000: <%%spellout-leading< $(cardinal,one{billion}other{billions})$[ >>];
+1000000000000000: <%%spellout-leading< $(cardinal,one{billiard}other{billiards})$[ >>];
+1000000000000000000: =#,##0=;
+%%et-unieme:
+1: et-unième;
+2: =%%spellout-ordinal=;
+11: et-onzième;
+12: =%%spellout-ordinal=;
+%%mille-ordinal:
+1: et unième;
+2: =%%spellout-ordinal=;
+%%spellout-ordinal:
+1: unième;
+2: deuxième;
+3: troisième;
+4: quatrième;
+5: cinquième;
+6: sixième;
+7: septième;
+8: huitième;
+9: neuvième;
+10: dixième;
+11: onzième;
+12: douzième;
+13: treizième;
+14: quatorzième;
+15: quinzième;
+16: seizième;
+17: dix->>;
+20: vingt[->%%et-unieme>|ième];
+30: trent[e->%%et-unieme>|ième];
+40: quarant[e->%%et-unieme>|ième];
+50: cinquant[e->%%et-unieme>|ième];
+60/20: soixant[e->%%et-unieme>|ième];
+80/20: quatre-vingt[->>|ième];
+100: cent[ >>|ième];
+200: <%spellout-cardinal-masculine< cent[ >>|ième];
+1000: mill[e >%%mille-ordinal>|ième];
+2000: <%%spellout-leading< mill[e >%%mille-ordinal>|ième];
+1000000: million[ >>|ième];
+2000000: <%%spellout-leading< million[s >>|ième];
+1000000000: milliard[ >>|ième];
+2000000000: <%%spellout-leading< milliard[s >>|ième];
+1000000000000: billion[ >>|ième];
+2000000000000: <%%spellout-leading< billion[s >>|ième];
+1000000000000000: billiard[ >>|ième];
+2000000000000000: <%%spellout-leading< billiard[s >>|ième];
+1000000000000000000: =#,##0=;
+%spellout-ordinal-masculine-plural:
+0: =%spellout-ordinal-masculine=s;
+%spellout-ordinal-masculine:
+-x: moins >>;
+x.x: =#,##0.#=;
+0: zéroième;
+1: premier;
+2: =%%spellout-ordinal=;
+%spellout-ordinal-feminine-plural:
+0: =%spellout-ordinal-feminine=s;
+%spellout-ordinal-feminine:
+-x: moins >>;
+x.x: =#,##0.#=;
+0: zéroième;
+1: première;
+2: =%%spellout-ordinal=;
+)", error, status);
+    std::cout << u_errorName(status) << " " << error.line << "\n";
+    status = U_ZERO_ERROR;
+    oldRules.setDefaultRuleSet(u"%spellout-ordinal-masculine", status);
+    std::cout << u_errorName(status) << "\n";
+    newRules.setDefaultRuleSet(u"%spellout-ordinal-masculine", status);
+    std::cout << u_errorName(status) << "\n";
+    for (int n = -250; n <= 2'000'010; ++n) {
+        UnicodeString oldString;
+        UnicodeString newString;
+        std::string outOld;
+        std::string outNew;
+        oldRules.format(n, oldString).toUTF8(StringByteSink(&outOld));
+        newRules.format(n, newString).toUTF8(StringByteSink(&outNew));
+        if (n > 200 && n % 100 == 81) {
+            if (!oldString.endsWith(u"quatre-vingt-et-unième")) {
+                std::cout << "Expected *quatre-vingt-et-unième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"quatre-vingt-et-unième", u"quatre-vingt-unième");
+        }
+        if (n > 200 && n % 100 == 91) {
+            if (!oldString.endsWith(u"quatre-vingt-et-onzième")) {
+                std::cout << "Expected *quatre-vingt-et-onzième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"quatre-vingt-et-onzième", u"quatre-vingt-onzième");
+        }
+        if (n > 300 && n % 1000 >= 100 && n % 100 == 1) {
+            if (!oldString.endsWith(u"cent-et-unième")) {
+                std::cout << "Expected *cent-et-unième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"cent-et-unième", u"cent unième");
+        }
+        if (n > 300 && n % 1000 >= 100 && n % 100 == 11) {
+            if (!oldString.endsWith(u"cent-et-onzième")) {
+                std::cout << "Expected *cent-et-onzième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"cent-et-onzième", u"cent onzième");
+        }
+        if (n > 3000 && n % 1'000'000 >= 1000 && n % 1000 == 1) {
+            if (!oldString.endsWith(u"mille-et-unième")) {
+                std::cout << "Expected *mille-et-unième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"mille-et-unième", u"mille unième");
+        }
+        if (n > 3000 && n % 1'000'000 >= 1000 && n % 1000 == 11) {
+            if (!oldString.endsWith(u"mille-et-onzième")) {
+                std::cout << "Expected *mille-et-onzième in " << outOld << "\n";
+                }
+            oldString.findAndReplace(u"mille-et-onzième", u"mille onzième");
+        }
+        if (oldString != newString) {
+            std::cout << n << " | " << outOld << " | " << outNew << "\n";
+        }
+    }
+    std::terminate();
     RuleBasedNumberFormat* formatter
         = new RuleBasedNumberFormat(URBNF_SPELLOUT, Locale::getFrance(), status);
     
