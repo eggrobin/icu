@@ -1557,51 +1557,84 @@ x.x: =#,##0.#=;
     std::cout << u_errorName(status) << "\n";
     newRules.setDefaultRuleSet(u"%spellout-ordinal-masculine", status);
     std::cout << u_errorName(status) << "\n";
-    for (int n = -250; n <= 2'000'010; ++n) {
+    for (int n = 0;; ++n) {
         UnicodeString oldString;
         UnicodeString newString;
         std::string outOld;
         std::string outNew;
         oldRules.format(n, oldString).toUTF8(StringByteSink(&outOld));
         newRules.format(n, newString).toUTF8(StringByteSink(&outNew));
-        if (n > 200 && n % 100 == 81) {
+        std::string notes;
+        if (n % 100 == 81) {
             if (!oldString.endsWith(u"quatre-vingt-et-unième")) {
                 std::cout << "Expected *quatre-vingt-et-unième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"quatre-vingt-et-unième", u"quatre-vingt-unième");
+            }
+            if (n == 181) {
+                notes += "further instances of quatre-vingt-et-unième → quatre-vingt-unième omitted. ";
+            } else if (n > 181) {
+                oldString.findAndReplace(u"quatre-vingt-et-unième", u"quatre-vingt-unième");
+            }
         }
-        if (n > 200 && n % 100 == 91) {
+        if (n % 100 == 91) {
             if (!oldString.endsWith(u"quatre-vingt-et-onzième")) {
                 std::cout << "Expected *quatre-vingt-et-onzième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"quatre-vingt-et-onzième", u"quatre-vingt-onzième");
+            }
+            if (n == 191) {
+                notes += "further instances of quatre-vingt-et-onzième → quatre-vingt-onzième omitted. ";
+            } else if (n > 191) {
+                oldString.findAndReplace(u"quatre-vingt-et-onzième", u"quatre-vingt-onzième");
+            }
         }
-        if (n > 300 && n % 1000 >= 100 && n % 100 == 1) {
+        if (n % 1000 >= 100 && n % 100 == 1) {
             if (!oldString.endsWith(u"cent-et-unième")) {
                 std::cout << "Expected *cent-et-unième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"cent-et-unième", u"cent unième");
+            }
+            if (n == 201) {
+                notes += "further instances of cent-et-unième → cent unième omitted. ";
+            } else if (n > 201) {
+                oldString.findAndReplace(u"cent-et-unième", u"cent unième");
+            }
         }
-        if (n > 300 && n % 1000 >= 100 && n % 100 == 11) {
+        if (n % 1000 >= 100 && n % 100 == 11) {
             if (!oldString.endsWith(u"cent-et-onzième")) {
                 std::cout << "Expected *cent-et-onzième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"cent-et-onzième", u"cent onzième");
+            }
+            if (n == 211) {
+                notes += "further instances of cent-et-onzième → cent onzième omitted. ";
+            } else if (n > 211) {
+                oldString.findAndReplace(u"cent-et-onzième", u"cent onzième");
+            }
         }
-        if (n > 3000 && n % 1'000'000 >= 1000 && n % 1000 == 1) {
+        if (n % 1'000'000 >= 1000 && n % 1000 == 1) {
             if (!oldString.endsWith(u"mille-et-unième")) {
                 std::cout << "Expected *mille-et-unième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"mille-et-unième", u"mille unième");
+            }
+            if (n == 2001) {
+                notes += "further instances of mille-et-unième → mille et unième omitted. ";
+            } else if (n > 2001) {
+                oldString.findAndReplace(u"mille-et-unième", u"mille et unième");
+            }
         }
-        if (n > 3000 && n % 1'000'000 >= 1000 && n % 1000 == 11) {
+        if (n % 1'000'000 >= 1000 && n % 1000 == 11) {
             if (!oldString.endsWith(u"mille-et-onzième")) {
                 std::cout << "Expected *mille-et-onzième in " << outOld << "\n";
-                }
-            oldString.findAndReplace(u"mille-et-onzième", u"mille onzième");
+            }
+            if (n == 2011) {
+                notes += "further instances of mille-et-onzième → mille onzième omitted. ";
+            } else if (n > 2011) {
+                oldString.findAndReplace(u"mille-et-onzième", u"mille onzième");
+            }
         }
         if (oldString != newString) {
-            std::cout << n << " | " << outOld << " | " << outNew << "\n";
+            std::cout << n << " | " << outOld << " | " << outNew << " | " << notes << "\n";
+        }
+        if (n == 2'000'010) {
+            std::cout << " … | … | … | " << "\n";
+            n = 999'999'997;
+        }
+        if (n == 1'002'000'010) {
+            std::cout << " … | … | … | " << "\n";
+            break;
         }
     }
     std::terminate();
