@@ -1458,41 +1458,6 @@ void RBBITableBuilder::removeColumn(int32_t column) {
     }
 }
 
-/*
- * findDuplicateState
- */
-bool RBBITableBuilder::findDuplicateState(IntPair *states) {
-    int32_t numStates = fDStates->size();
-    int32_t numCols = fRB->fSetBuilder->getNumCharCategories();
-
-    for (; states->first<numStates-1; states->first++) {
-        RBBIStateDescriptor* firstSD = static_cast<RBBIStateDescriptor*>(fDStates->elementAt(states->first));
-        for (states->second=states->first+1; states->second<numStates; states->second++) {
-            RBBIStateDescriptor* duplSD = static_cast<RBBIStateDescriptor*>(fDStates->elementAt(states->second));
-            if (firstSD->fAccepting != duplSD->fAccepting ||
-                firstSD->fLookAhead != duplSD->fLookAhead ||
-                firstSD->fTagsIdx   != duplSD->fTagsIdx) {
-                continue;
-            }
-            bool rowsMatch = true;
-            for (int32_t col=0; col < numCols; ++col) {
-                int32_t firstVal = firstSD->fDtran->elementAti(col);
-                int32_t duplVal = duplSD->fDtran->elementAti(col);
-                if (!((firstVal == duplVal) ||
-                        ((firstVal == states->first || firstVal == states->second) &&
-                        (duplVal  == states->first || duplVal  == states->second)))) {
-                    rowsMatch = false;
-                    break;
-                }
-            }
-            if (rowsMatch) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 
 bool RBBITableBuilder::findDuplicateSafeState(IntPair *states) {
     int32_t numStates = fSafeTable->size();
@@ -1519,34 +1484,6 @@ bool RBBITableBuilder::findDuplicateSafeState(IntPair *states) {
         }
     }
     return false;
-}
-
-
-void RBBITableBuilder::removeState(IntPair duplStates) {
-    const int32_t keepState = duplStates.first;
-    const int32_t duplState = duplStates.second;
-    U_ASSERT(keepState < duplState);
-    U_ASSERT(duplState < fDStates->size());
-
-    RBBIStateDescriptor* duplSD = static_cast<RBBIStateDescriptor*>(fDStates->elementAt(duplState));
-    fDStates->removeElementAt(duplState);
-    delete duplSD;
-
-    int32_t numStates = fDStates->size();
-    int32_t numCols = fRB->fSetBuilder->getNumCharCategories();
-    for (int32_t state=0; state<numStates; ++state) {
-        RBBIStateDescriptor* sd = static_cast<RBBIStateDescriptor*>(fDStates->elementAt(state));
-        for (int32_t col=0; col<numCols; col++) {
-            int32_t existingVal = sd->fDtran->elementAti(col);
-            int32_t newVal = existingVal;
-            if (existingVal == duplState) {
-                newVal = keepState;
-            } else if (existingVal > duplState) {
-                newVal = existingVal - 1;
-            }
-            sd->fDtran->setElementAt(newVal, col);
-        }
-    }
 }
 
 void RBBITableBuilder::removeSafeState(IntPair duplStates) {
