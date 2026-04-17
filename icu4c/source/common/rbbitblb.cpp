@@ -1090,14 +1090,6 @@ void RBBITableBuilder::minimizeStates() {
         [](void *p) { delete static_cast<UVector*>(p); });
     
     for (int32_t i = 0; i < initialPartition.size(); ++i) {
-        auto* const states = new UVector(*fStatus);
-        if (U_FAILURE(*fStatus)) {
-            return;
-        }
-        if (states == nullptr) {
-          *fStatus = U_MEMORY_ALLOCATION_ERROR;
-          return;
-        }
         partition->adoptElement(
             static_cast<TypeToStates*>(initialPartition.elementAt(i))->states.release(),
             *fStatus);
