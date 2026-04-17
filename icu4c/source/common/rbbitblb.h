@@ -105,6 +105,7 @@ private:
     void     flagLookAheadStates();
     void     flagTaggedStates();
     void     mergeRuleStatusVals();
+    void     minimizeStates();
 
     /**
      * Merge redundant state table columns, eliminating character classes with identical behavior.

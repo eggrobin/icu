@@ -547,7 +547,7 @@ void RBBITableBuilder::bofFixup() {
 //                        transition tables for these states, by the algorithm
 //                        of fig. 3.44 in Aho.
 //
-//                        Most of the comments are quotes of Aho's psuedo-code.
+//                        Most of the comments are quotes of Aho's pseudo-code.
 //
 //-----------------------------------------------------------------------------
 void RBBITableBuilder::buildStateTable() {
@@ -987,6 +987,275 @@ void  RBBITableBuilder::mergeRuleStatusVals() {
 
 
 
+//-----------------------------------------------------------------------------
+//
+//    minimizeStates    Minimize the number of states of the DFA, by Algorithm
+//                      3.6 in Aho.  The one twist is that instead of starting
+//                      from a partition in two groups (accepting and non-
+//                      accepting states), we partition according to all
+//                      relevant properties of the states, namely the values of:
+//                      - fAccepting—which may be non-accepting,
+//                        unconditionally accepting, or the index of a
+//                        lookahead—;
+//                      - fLookAhead;
+//                      - fTagsIdx.
+//
+//-----------------------------------------------------------------------------
+
+void RBBITableBuilder::minimizeStates() {
+    if (U_FAILURE(*fStatus)) {
+        return;
+    }
+    struct StateType {
+        uint32_t fAccepting;
+        uint32_t fLookAhead;
+        int32_t fTagsIdx;
+        bool operator==(StateType const &other) const {
+            return fAccepting == other.fAccepting &&
+                   fLookAhead == other.fLookAhead &&
+                   fTagsIdx == other.fTagsIdx;
+        }
+    };
+    // Group the states by types (but we have no maps so this is verbose).
+    // If there are no lookaheads and no tags, there are only two types
+    // (accepting and non-accepting) in which case this is exactly step 1
+    // of Algorithm 3.6.
+    struct TypeToStates {
+        TypeToStates(const StateType &type, UErrorCode &status)
+            : type(type), states(new UVector(status)) {
+            if (U_SUCCESS(status) && states == nullptr) {
+                status = U_MEMORY_ALLOCATION_ERROR;
+            }
+        }
+        StateType type;
+        std::unique_ptr<UVector> states;
+    };
+    UVector initialPartition(*fStatus);
+    initialPartition.setDeleter(
+        [](void *p) { delete static_cast<TypeToStates *>(p); });
+    for (int32_t i = 0; i < fDStates->size(); ++i) {
+        const RBBIStateDescriptor &state =
+            *static_cast<RBBIStateDescriptor *>(fDStates->elementAt(i));
+        const StateType type{state.fAccepting,
+                             state.fLookAhead,
+                             state.fTagsIdx};
+        int32_t j = 0;
+        for (; j < initialPartition.size(); ++j) {
+            auto &[type_j, states] =
+                *static_cast<TypeToStates *>(initialPartition.elementAt(j));
+            if (type_j == type) {
+                states->addElement(i, *fStatus);
+                break;
+            }
+        }
+        if (j == initialPartition.size()) {
+            const auto newEntry = new TypeToStates(type, *fStatus);
+            if (U_FAILURE(*fStatus)) {
+                return;
+            }
+            if (newEntry == nullptr) {
+              *fStatus = U_MEMORY_ALLOCATION_ERROR;
+              return;
+            }
+            newEntry->states->addElement(i, *fStatus);
+            initialPartition.adoptElement(newEntry, *fStatus);
+        }
+    }
+    // The partition Π from Algorithm 3.6.
+    // (We could call it Π, but some member companies that integrate the ICU
+    // code base prohibit non-ASCII identifiers…).
+    std::unique_ptr<UVector> partition(new UVector(*fStatus));
+    if (U_FAILURE(*fStatus)) {
+        return;
+    }
+    if (partition == nullptr) {
+      *fStatus = U_MEMORY_ALLOCATION_ERROR;
+      return;
+    }
+    partition->setDeleter(
+        [](void *p) { delete static_cast<UVector*>(p); });
+    
+    for (int32_t i = 0; i < initialPartition.size(); ++i) {
+        auto* const states = new UVector(*fStatus);
+        if (U_FAILURE(*fStatus)) {
+            return;
+        }
+        if (states == nullptr) {
+          *fStatus = U_MEMORY_ALLOCATION_ERROR;
+          return;
+        }
+        partition->adoptElement(
+            static_cast<TypeToStates*>(initialPartition.elementAt(i))->states.release(),
+            *fStatus);
+    }
+    // Given the index of a state 𝑠 in `fDStates`, returns a UVector of integers
+    // σ(𝑠) such that 𝑠.fDtran[i] (the index of the state reached by the
+    // transition from 𝑠 on the character class with index i) is in Π[σ(𝑠)[i]].
+    // We then have σ(𝑠) == σ(𝑡) if and only if “for all input symbols 𝑎, states
+    // 𝑠 and 𝑡 have transitions on 𝑎 to states in the same group of Π” (which is
+    // what defines the refinement of 𝐺 in Fig. 3.45).
+    auto partition_signature =
+        [&partition, this](int32_t stateIndex) -> std::unique_ptr<UVector> {
+            const RBBIStateDescriptor &state =
+                *static_cast<RBBIStateDescriptor*>(
+                    fDStates->elementAt(stateIndex));
+            std::unique_ptr<UVector> result(
+                new UVector(state.fDtran->size(), *fStatus));
+            if (U_FAILURE(*fStatus)) {
+                return nullptr;
+            }
+            if (result == nullptr) {
+                *fStatus = U_MEMORY_ALLOCATION_ERROR;
+                return nullptr;
+            }
+            for (int32_t i = 0; i < state.fDtran->size(); ++i) {
+                int32_t toState = state.fDtran->elementAti(i);
+                for (int32_t partIndex = 0;
+                     partIndex < partition->size();
+                     ++partIndex) {
+                    const UVector &part =
+                        *static_cast<UVector*>(partition->elementAt(partIndex));
+                    if (part.contains(toState)) {
+                        result->addElement(partIndex, *fStatus);
+                        break;
+                    }
+                }
+            }
+            result->setComparer([](const UElement left, const UElement right) -> UBool {
+                return left.integer == right.integer;
+            });
+            return result;
+        };
+    // The loop between steps 2. and 3. of Algorithm 3.6.
+    for (;;) {
+        // Π_new.
+        std::unique_ptr<UVector> partitionNew(new UVector(*fStatus));
+        if (U_FAILURE(*fStatus)) {
+            return;
+        }
+        if (partitionNew == nullptr) {
+          *fStatus = U_MEMORY_ALLOCATION_ERROR;
+          return;
+        }
+        partitionNew->setDeleter(
+            [](void *p) { delete static_cast<UVector*>(p); });
+        // The procedure from Figure 3.45, Construction of Π_new.
+        bool refined = false;
+        for (int32_t i = 0; i < partition->size(); ++i) {
+            // Group 𝐺 in Π (=`partition`).
+            const UVector &group = *static_cast<UVector*>(partition->elementAt(i));
+            // Partition 𝐺 based on the signature, see above.
+            struct SignatureToStates {
+                SignatureToStates(std::unique_ptr<UVector> signature, UErrorCode &status)
+                    : signature(std::move(signature)), states(new UVector(status)) {
+                    if (U_SUCCESS(status) && states == nullptr) {
+                        status = U_MEMORY_ALLOCATION_ERROR;
+                    }
+                }
+                std::unique_ptr<UVector> signature;
+                std::unique_ptr<UVector> states;
+            };
+            UVector groupRefinement(*fStatus);
+            for (int32_t j = 0; j < group.size(); ++j) {
+                // Index of a state in the group.
+                const int32_t s = group.elementAti(j);
+                auto signature = partition_signature(s);
+                int32_t k = 0;
+                for (; k < groupRefinement.size(); ++k) {
+                    const auto &[subgroupSignature, subgroup] =
+                        *static_cast<SignatureToStates*>(groupRefinement.elementAt(k));
+                    if (*subgroupSignature == *signature) {
+                        subgroup->addElement(s, *fStatus);
+                        break;
+                    }
+                }
+                if (k == groupRefinement.size()) {
+                    const auto newEntry =
+                        new SignatureToStates(std::move(signature), *fStatus);
+                    if (U_FAILURE(*fStatus)) {
+                        return;
+                    }
+                    if (newEntry == nullptr) {
+                      *fStatus = U_MEMORY_ALLOCATION_ERROR;
+                      return;
+                    }
+                    newEntry->states->addElement(s, *fStatus);
+                    groupRefinement.addElement(newEntry, *fStatus);
+                }
+            }
+            refined |= groupRefinement.size() > 1;
+            for (int32_t j = 0; j < groupRefinement.size(); ++j) {
+                auto &[_, subgroup] = *static_cast<SignatureToStates*>(
+                    groupRefinement.elementAt(j));
+                partitionNew->adoptElement(subgroup.release(), *fStatus);
+            }
+        }
+        if (refined) {
+            partition = std::move(partitionNew);
+        } else {
+            break;
+        }
+    }
+    // We will use the indices in `partition` as the new state indices.  Make
+    // sure that the start (1) and stop (0) states remain in their correct
+    // places; everything else can merrily be scrambled.
+    for (int i = 0; i < partition->size(); ++i) {
+        UVector *const part_i = static_cast<UVector *>(partition->elementAt(i));
+        if (part_i->contains(0)) {
+            void *const part_0 = partition->elementAt(0);
+            // No swap on UVector, so we briefly remove the deleter.
+            const auto deleter = partition->setDeleter(nullptr);
+            partition->setElementAt(part_i, 0);
+            partition->setElementAt(part_0, i);
+            partition->setDeleter(deleter);
+        } else if (part_i->contains(1)) {
+            void *const part_1 = partition->elementAt(1);
+            const auto deleter = partition->setDeleter(nullptr);
+            partition->setElementAt(part_i, 1);
+            partition->setElementAt(part_1, i);
+            partition->setDeleter(deleter);
+        }
+    }
+    if (U_FAILURE(*fStatus)) {
+        return;
+    }
+    std::unique_ptr<uint16_t[]> oldStateToPart(new uint16_t[fDStates->size()]());
+    if (oldStateToPart == nullptr) {
+      *fStatus = U_MEMORY_ALLOCATION_ERROR;
+      return;
+    }
+    for (int i = 0; i < partition->size(); ++i) {
+        const UVector &part = *static_cast<UVector*>(partition->elementAt(i));
+        for (int j = 0; j < part.size(); ++j) {
+            oldStateToPart[part.elementAti(j)] = i;
+        }
+    }
+    std::unique_ptr<UVector> oldStates(fDStates);
+    fDStates = new UVector(*fStatus);
+    if (U_FAILURE(*fStatus)) {
+        return;
+    }
+    if (fDStates == nullptr) {
+      *fStatus = U_MEMORY_ALLOCATION_ERROR;
+      return;
+    }
+    for (int i = 0; i < partition->size(); ++i) {
+        const UVector &part = *static_cast<UVector*>(partition->elementAt(i));
+        RBBIStateDescriptor *const state =
+            static_cast<RBBIStateDescriptor*>(oldStates->elementAt(part.elementAti(0)));
+        fDStates->addElement(state, *fStatus);
+        for (int j = 0; j < state->fDtran->size(); ++j) {
+            state->fDtran->setElementAt(oldStateToPart[state->fDtran->elementAti(j)], j);
+        }
+        oldStates->setElementAt(nullptr, part.elementAti(0));
+    }
+    oldStates->setDeleter([](void *p) { delete static_cast<RBBIStateDescriptor*>(p); });
+}
+
+
+
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -1303,15 +1572,9 @@ void RBBITableBuilder::removeSafeState(IntPair duplStates) {
  * RemoveDuplicateStates
  */
 int32_t RBBITableBuilder::removeDuplicateStates() {
-    IntPair dupls = {3, 0};
-    int32_t numStatesRemoved = 0;
-
-    while (findDuplicateState(&dupls)) {
-        // printf("Removing duplicate states (%d, %d)\n", dupls.first, dupls.second);
-        removeState(dupls);
-        ++numStatesRemoved;
-    }
-    return numStatesRemoved;
+    const int32_t oldStateCount = fDStates->size();
+    minimizeStates();
+    return fDStates->size() - oldStateCount;
 }
 
 
