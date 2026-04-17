@@ -1032,6 +1032,9 @@ void RBBITableBuilder::minimizeStates() {
                    fTagsIdx == other.fTagsIdx;
         }
     };
+    // We wrap `UVector`s in `LocalPointer`s throughout so we can move them,
+    // including into `UVector`s (by orphaning them from the `LocalPointer`
+    // and having the enclosing `UVector` adopt them). 
     // Group the states by types (but we have no maps so this is verbose).
     // If there are no lookaheads and no tags, there are only two types
     // (accepting and non-accepting) in which case this is exactly step 1
