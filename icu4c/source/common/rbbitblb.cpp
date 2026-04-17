@@ -13,6 +13,8 @@
 
 #include "unicode/utypes.h"
 
+#include <memory>
+
 #if !UCONFIG_NO_BREAK_ITERATION
 
 #include "unicode/unistr.h"
@@ -1022,13 +1024,9 @@ void RBBITableBuilder::minimizeStates() {
     // of Algorithm 3.6.
     struct TypeToStates {
         TypeToStates(const StateType &type, UErrorCode &status)
-            : type(type), states(new UVector(status)) {
-            if (U_SUCCESS(status) && states == nullptr) {
-                status = U_MEMORY_ALLOCATION_ERROR;
-            }
-        }
+            : type(type), states(new UVector(status), status) {}
         StateType type;
-        std::unique_ptr<UVector> states;
+        LocalPointer<UVector> states;
     };
     UVector initialPartition(*fStatus);
     initialPartition.setDeleter(
@@ -1064,20 +1062,16 @@ void RBBITableBuilder::minimizeStates() {
     // The partition Π from Algorithm 3.6.
     // (We could call it Π, but some member companies that integrate the ICU
     // code base prohibit non-ASCII identifiers…).
-    std::unique_ptr<UVector> partition(new UVector(*fStatus));
+    LocalPointer<UVector> partition(new UVector(*fStatus), *fStatus);
     if (U_FAILURE(*fStatus)) {
         return;
-    }
-    if (partition == nullptr) {
-      *fStatus = U_MEMORY_ALLOCATION_ERROR;
-      return;
     }
     partition->setDeleter(
         [](void *p) { delete static_cast<UVector*>(p); });
     
     for (int32_t i = 0; i < initialPartition.size(); ++i) {
         partition->adoptElement(
-            static_cast<TypeToStates*>(initialPartition.elementAt(i))->states.release(),
+            static_cast<TypeToStates*>(initialPartition.elementAt(i))->states.orphan(),
             *fStatus);
     }
     // Given the index of a state 𝑠 in `fDStates`, returns a UVector of integers
@@ -1087,18 +1081,14 @@ void RBBITableBuilder::minimizeStates() {
     // 𝑠 and 𝑡 have transitions on 𝑎 to states in the same group of Π” (which is
     // what defines the refinement of 𝐺 in Fig. 3.45).
     auto partition_signature =
-        [&partition, this](int32_t stateIndex) -> std::unique_ptr<UVector> {
+        [&partition, this](int32_t stateIndex) -> LocalPointer<UVector> {
             const RBBIStateDescriptor &state =
                 *static_cast<RBBIStateDescriptor*>(
                     fDStates->elementAt(stateIndex));
-            std::unique_ptr<UVector> result(
-                new UVector(state.fDtran->size(), *fStatus));
+            LocalPointer<UVector> result(
+                new UVector(state.fDtran->size(), *fStatus), *fStatus);
             if (U_FAILURE(*fStatus)) {
-                return nullptr;
-            }
-            if (result == nullptr) {
-                *fStatus = U_MEMORY_ALLOCATION_ERROR;
-                return nullptr;
+                return LocalPointer<UVector>(nullptr);
             }
             for (int32_t i = 0; i < state.fDtran->size(); ++i) {
                 int32_t toState = state.fDtran->elementAti(i);
@@ -1121,13 +1111,9 @@ void RBBITableBuilder::minimizeStates() {
     // The loop between steps 2. and 3. of Algorithm 3.6.
     for (;;) {
         // Π_new.
-        std::unique_ptr<UVector> partitionNew(new UVector(*fStatus));
+        LocalPointer<UVector> partitionNew(new UVector(*fStatus), *fStatus);
         if (U_FAILURE(*fStatus)) {
             return;
-        }
-        if (partitionNew == nullptr) {
-          *fStatus = U_MEMORY_ALLOCATION_ERROR;
-          return;
         }
         partitionNew->setDeleter(
             [](void *p) { delete static_cast<UVector*>(p); });
@@ -1138,14 +1124,11 @@ void RBBITableBuilder::minimizeStates() {
             const UVector &group = *static_cast<UVector*>(partition->elementAt(i));
             // Partition 𝐺 based on the signature, see above.
             struct SignatureToStates {
-                SignatureToStates(std::unique_ptr<UVector> signature, UErrorCode &status)
-                    : signature(std::move(signature)), states(new UVector(status)) {
-                    if (U_SUCCESS(status) && states == nullptr) {
-                        status = U_MEMORY_ALLOCATION_ERROR;
-                    }
+                SignatureToStates(LocalPointer<UVector> signature, UErrorCode &status)
+                    : signature(std::move(signature)), states(new UVector(status), status) {
                 }
-                std::unique_ptr<UVector> signature;
-                std::unique_ptr<UVector> states;
+                LocalPointer<UVector> signature;
+                LocalPointer<UVector> states;
             };
             UVector groupRefinement(*fStatus);
             groupRefinement.setDeleter([](void *p) { delete static_cast<SignatureToStates*>(p); });
@@ -1180,7 +1163,7 @@ void RBBITableBuilder::minimizeStates() {
             for (int32_t j = 0; j < groupRefinement.size(); ++j) {
                 auto &[_, subgroup] = *static_cast<SignatureToStates*>(
                     groupRefinement.elementAt(j));
-                partitionNew->adoptElement(subgroup.release(), *fStatus);
+                partitionNew->adoptElement(subgroup.orphan(), *fStatus);
             }
         }
         if (refined) {
@@ -1223,7 +1206,7 @@ void RBBITableBuilder::minimizeStates() {
             oldStateToPart[part.elementAti(j)] = i;
         }
     }
-    std::unique_ptr<UVector> oldStates(fDStates);
+    LocalPointer<UVector> oldStates(fDStates);
     fDStates = new UVector(*fStatus);
     if (U_FAILURE(*fStatus)) {
         return;
