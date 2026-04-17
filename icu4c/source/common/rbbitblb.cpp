@@ -1170,6 +1170,7 @@ void RBBITableBuilder::minimizeStates() {
                 std::unique_ptr<UVector> states;
             };
             UVector groupRefinement(*fStatus);
+            groupRefinement.setDeleter([](void *p) { delete static_cast<SignatureToStates*>(p); });
             for (int32_t j = 0; j < group.size(); ++j) {
                 // Index of a state in the group.
                 const int32_t s = group.elementAti(j);
@@ -1194,7 +1195,7 @@ void RBBITableBuilder::minimizeStates() {
                       return;
                     }
                     newEntry->states->addElement(s, *fStatus);
-                    groupRefinement.addElement(newEntry, *fStatus);
+                    groupRefinement.adoptElement(newEntry, *fStatus);
                 }
             }
             refined |= groupRefinement.size() > 1;
