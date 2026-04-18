@@ -1064,16 +1064,12 @@ void RBBITableBuilder::minimizeStates() {
             }
         }
         if (j == initialPartition.size()) {
-            const auto newEntry = new TypeToStates(type, *fStatus);
+            auto newEntry = LocalPointer<TypeToStates>(new TypeToStates(type, *fStatus), *fStatus);
             if (U_FAILURE(*fStatus)) {
                 return;
             }
-            if (newEntry == nullptr) {
-              *fStatus = U_MEMORY_ALLOCATION_ERROR;
-              return;
-            }
             newEntry->states->addElement(i, *fStatus);
-            initialPartition.adoptElement(newEntry, *fStatus);
+            initialPartition.adoptElement(newEntry.orphan(), *fStatus);
         }
     }
     // The partition Π from Algorithm 3.6.
@@ -1224,13 +1220,9 @@ void RBBITableBuilder::minimizeStates() {
         }
     }
     LocalPointer<UVector> oldStates(fDStates);
-    fDStates = new UVector(*fStatus);
+    fDStates = LocalPointer<UVector>(new UVector(*fStatus), *fStatus).orphan();
     if (U_FAILURE(*fStatus)) {
         return;
-    }
-    if (fDStates == nullptr) {
-      *fStatus = U_MEMORY_ALLOCATION_ERROR;
-      return;
     }
     for (int i = 0; i < partition->size(); ++i) {
         const UVector &part = *static_cast<UVector*>(partition->elementAt(i));
