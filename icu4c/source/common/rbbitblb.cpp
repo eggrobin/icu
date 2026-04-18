@@ -1208,10 +1208,9 @@ void RBBITableBuilder::minimizeStates() {
     if (U_FAILURE(*fStatus)) {
         return;
     }
-    std::unique_ptr<uint16_t[]> oldStateToPart(new uint16_t[fDStates->size()]());
-    if (oldStateToPart == nullptr) {
-      *fStatus = U_MEMORY_ALLOCATION_ERROR;
-      return;
+    LocalArray<uint16_t> oldStateToPart(new uint16_t[fDStates->size()](), *fStatus);
+    if (U_FAILURE(*fStatus)) {
+        return;
     }
     for (int i = 0; i < partition->size(); ++i) {
         const UVector &part = *static_cast<UVector*>(partition->elementAt(i));
