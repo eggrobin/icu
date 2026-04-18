@@ -13,8 +13,6 @@
 
 #include "unicode/utypes.h"
 
-#include <memory>
-
 #if !UCONFIG_NO_BREAK_ITERATION
 
 #include "unicode/unistr.h"
