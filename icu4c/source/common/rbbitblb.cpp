@@ -1037,7 +1037,7 @@ void RBBITableBuilder::minimizeStates() {
     // If there are no lookaheads and no tags, there are only two types
     // (accepting and non-accepting) in which case this is exactly step 1
     // of Algorithm 3.6.
-    struct TypeToStates {
+    struct TypeToStates : UMemory {
         TypeToStates(const StateType &type, UErrorCode &status)
             : type(type), states(new UVector(status), status) {}
         StateType type;
@@ -1134,7 +1134,7 @@ void RBBITableBuilder::minimizeStates() {
             // Group 𝐺 in Π (=`partition`).
             const UVector &group = *static_cast<UVector*>(partition->elementAt(i));
             // Partition 𝐺 based on the signature, see above.
-            struct SignatureToStates {
+            struct SignatureToStates : UMemory {
                 SignatureToStates(LocalPointer<UVector> signature, UErrorCode &status)
                     : signature(std::move(signature)), states(new UVector(status), status) {
                 }
