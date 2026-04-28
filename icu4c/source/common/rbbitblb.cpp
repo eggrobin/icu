@@ -1206,8 +1206,11 @@ void RBBITableBuilder::minimizeStates() {
     if (U_FAILURE(*fStatus)) {
         return;
     }
-    LocalArray<uint16_t> oldStateToPart(new uint16_t[fDStates->size()](), *fStatus);
-    if (U_FAILURE(*fStatus)) {
+    // We cannot use LocalArray nor new[] because, on uint16_t, they would call
+    // the global new[] and delete[].
+    uint16_t *oldStateToPart = static_cast<uint16_t*>(
+        uprv_malloc(sizeof(uint16_t) * fDStates->size()));
+    if (oldStateToPart == nullptr) {
         return;
     }
     for (int i = 0; i < partition->size(); ++i) {
@@ -1232,6 +1235,7 @@ void RBBITableBuilder::minimizeStates() {
         oldStates->setElementAt(nullptr, part.elementAti(0));
     }
     oldStates->setDeleter([](void *p) { delete static_cast<RBBIStateDescriptor*>(p); });
+    uprv_free(oldStateToPart);
 }
 
 
