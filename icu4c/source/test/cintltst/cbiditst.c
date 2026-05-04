@@ -76,6 +76,8 @@ static void _testPresentationForms(const UChar *in);
 
 static void doArabicShapingTestForNewCharacters(void);
 
+static void doArabicShapingTestExpandCompositOOB(void);
+
 static void testReorder(void);
 
 static void testReorderArabicMathSymbols(void);
@@ -154,6 +156,7 @@ addComplexTest(TestNode** root) {
     addTest(root, testReorderArabicMathSymbols, "complex/bidi/bug-9024");
     addTest(root, doArabicShapingTestForBug9024, "complex/arabic-shaping/bug-9024");
     addTest(root, doArabicShapingTestForNewCharacters, "complex/arabic-shaping/shaping2");
+    addTest(root, doArabicShapingTestExpandCompositOOB, "complex/arabic-shaping/expandCompositOOB");
 }
 
 static void
@@ -4979,4 +4982,40 @@ static void TestExplicitLevel0(void) {
         }
     }
     ubidi_close(bidi);
+}
+
+static void
+doArabicShapingTestExpandCompositOOB(void) {
+    /* Crafted Arabic input that triggers expandCompositCharAtNear() to read
+       dest[i+1] past the buffer when i == sourceLength-1. Before the fix,
+       this caused a 2-byte heap-buffer-overflow read under ASan. After the
+       fix, u_shapeArabic must succeed without out-of-bounds access. */
+    static const UChar source[] = {
+        0x0175, 0x2200, 0x4949, 0x4949, 0x4926, 0x4949, 0x0020, 0xFEF5,
+        0x0100, 0x0000, 0xFF00, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+        0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+        0xFFFF, 0xFFFF, 0x3801, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000,
+        0x0000, 0x01B3, 0x7F2F, 0xFC75, 0x4921, 0xF549, 0x00FE, 0x0001,
+        0x0100, 0x0030, 0x0000, 0x0000, 0x0000, 0xBD00, 0x2F01, 0x75FF,
+        0x217C, 0x4949, 0x4949, 0x4949, 0x2049, 0xF500, 0x00FE, 0x0001,
+        0x0000, 0x3801, 0x0000, 0xFF00, 0xFC75, 0x4921, 0x4949, 0x4949,
+        0x4949, 0x0020, 0xFEF5, 0x0100, 0x0000, 0x3801, 0x0040, 0x6C00,
+        0x0000, 0x0000, 0x1811, 0x2827, 0x0025, 0x00D0, 0x0600, 0xFF00,
+        0x00FF, 0x0038, 0xFF03, 0x75FD, 0xFFFE, 0x4949
+    };
+    UChar dest[256];
+    UErrorCode errorCode = U_ZERO_ERROR;
+    int32_t length;
+
+    length = u_shapeArabic(source, UPRV_LENGTHOF(source),
+                           dest, UPRV_LENGTHOF(dest),
+                           U_SHAPE_LETTERS_UNSHAPE |
+                           U_SHAPE_LENGTH_FIXED_SPACES_NEAR |
+                           U_SHAPE_TEXT_DIRECTION_LOGICAL,
+                           &errorCode);
+    if (U_FAILURE(errorCode)) {
+        log_err("u_shapeArabic(expandComposit OOB test) failed: %s\n",
+                u_errorName(errorCode));
+    }
+    (void)length;
 }
