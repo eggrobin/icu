@@ -32,7 +32,7 @@ $Han                = [:Han:];
 $CR                 = [\p{Word_Break = CR}];
 $LF                 = [\p{Word_Break = LF}];
 $Newline            = [\p{Word_Break = Newline}];
-$Extend             = [\p{Word_Break = Extend}-$Han];
+$Extend             = [\p{Word_Break = Extend}];#-$Han];
 $ZWJ                = [\p{Word_Break = ZWJ}];
 $Regional_Indicator = [\p{Word_Break = Regional_Indicator}];
 $Format             = [\p{Word_Break = Format}];
@@ -49,8 +49,8 @@ $ExtendNumLet       = [\p{Word_Break = ExtendNumLet}];
 $WSegSpace          = [\p{Word_Break = WSegSpace}];
 $Extended_Pict      = [\p{Extended_Pictographic}];
 
-$Hiragana           = [:Hiragana:];
-$Ideographic        = [\p{Ideographic}];
+#$Hiragana           = [:Hiragana:];
+#$Ideographic        = [\p{Ideographic}];
 
 
 #   Dictionary character set, for triggering language-based break engines. Currently
@@ -58,17 +58,17 @@ $Ideographic        = [\p{Ideographic}];
 #   5.0 or later as the definition of Complex_Context was corrected to include all
 #   characters requiring dictionary break.
 
-$Control        = [\p{Grapheme_Cluster_Break = Control}];
-$HangulSyllable = [\uac00-\ud7a3];
-$ComplexContext = [:LineBreak = Complex_Context:];
-$KanaKanji      = [$Han $Hiragana $Katakana];
-$dictionaryCJK  = [$KanaKanji $HangulSyllable];
-$dictionary     = [$ComplexContext $dictionaryCJK];
+#$Control        = [\p{Grapheme_Cluster_Break = Control}];
+#$HangulSyllable = [\uac00-\ud7a3];
+#$ComplexContext = [:LineBreak = Complex_Context:];
+#$KanaKanji      = [$Han $Hiragana $Katakana];
+#$dictionaryCJK  = [$KanaKanji $HangulSyllable];
+#$dictionary     = [$ComplexContext $dictionaryCJK];
 
 # TODO: check if handling of katakana in dictionary makes rules incorrect/void
 
 # leave CJK scripts out of ALetterPlus
-$ALetterPlus  = [$ALetter-$dictionaryCJK [$ComplexContext-$Extend-$Control]];
+$ALetterPlus  = $ALetter; # [$ALetter-$dictionaryCJK [$ComplexContext-$Extend-$Control]];
 
 
 ## -------------------------------------------------
@@ -100,11 +100,11 @@ $ExFm  = [$Extend $Format $ZWJ];
 
 $Numeric $ExFm* {100};              # This group of rules also attach trailing format/extends, but
 $ALetterPlus $ExFm* {200};          # with rule status set based on the word's final base character.
-$HangulSyllable {200};
+#$HangulSyllable {200};
 $Hebrew_Letter $ExFm* {200};
 $Katakana $ExFm* {400};             # note:  these status values override those from rule 5
-$Hiragana $ExFm* {400};             #        by virtue of being numerically larger.
-$Ideographic $ExFm* {400};          #
+#$Hiragana $ExFm* {400};             #        by virtue of being numerically larger.
+#$Ideographic $ExFm* {400};          #
 
 #
 # rule 5
@@ -164,8 +164,8 @@ $ExtendNumLet  $ExFm* $Katakana     {400};    #  (13b)
 ^$Regional_Indicator $ExFm* $Regional_Indicator;
 
 # special handling for CJK characters: chain for later dictionary segmentation
-$HangulSyllable $HangulSyllable {200};
-$KanaKanji $KanaKanji {400}; # different rule status if both kana and kanji found
+#$HangulSyllable $HangulSyllable {200};
+#$KanaKanji $KanaKanji {400}; # different rule status if both kana and kanji found
 
 # Rule 999
 #     Match a single code point if no other rule applies.
