@@ -133,6 +133,8 @@ $CR $LF {100};
 $LB4NonBreaks?  $LB4Breaks {100};    # LB 5  do not break before hard breaks.
 $CAN_CM $CM*    $LB4Breaks {100};
 ^$CM+           $LB4Breaks {100};
+# LB 3.
+[$LB4Breaks {eof}] {100};
 
 # LB 7         x SP
 #              x ZW
