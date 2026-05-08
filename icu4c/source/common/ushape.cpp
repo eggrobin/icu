@@ -1055,7 +1055,13 @@ expandCompositCharAtNear(char16_t *dest, int32_t sourceLength, int32_t destSize,
 
                     *pErrorCode=U_NO_SPACE_AVAILABLE;
                 }
-            }else if(lamAlefOption && isLamAlefChar(dest[i+1])) {
+            }else if(lamAlefOption) {
+                if (i >= sourceLength - 1) {
+                    printf("!!! %d >= %d\n", i, sourceLength - 1);
+                } else {
+                    printf("--- %d < %d\n", i, sourceLength - 1);
+                }
+                if(isLamAlefChar(dest[i+1])) {
                 if(dest[i] == SPACE_CHAR){
                     lamalefChar = dest[i+1];
                     dest[i+1] = LAM_CHAR;
@@ -1063,6 +1069,7 @@ expandCompositCharAtNear(char16_t *dest, int32_t sourceLength, int32_t destSize,
                 }else {
                     *pErrorCode=U_NO_SPACE_AVAILABLE;
                 }
+            }
             }
        }
        destSize = sourceLength;

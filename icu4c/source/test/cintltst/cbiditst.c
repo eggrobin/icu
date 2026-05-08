@@ -5004,6 +5004,9 @@ doArabicShapingTestExpandCompositOOB(void) {
         0x00FF, 0x0038, 0xFF03, 0x75FD, 0xFFFE, 0x4949
     };
     UChar dest[256];
+    for (int i = 0; i < 256; ++i) {
+        dest[i] = 0xFEF5;
+    }
     UErrorCode errorCode = U_ZERO_ERROR;
     int32_t length;
 
@@ -5013,6 +5016,9 @@ doArabicShapingTestExpandCompositOOB(void) {
                            U_SHAPE_LENGTH_FIXED_SPACES_NEAR |
                            U_SHAPE_TEXT_DIRECTION_LOGICAL,
                            &errorCode);
+    for (int i = 0; i < 256; ++i) {
+        printf("%03d : %04X\n", i, dest[i]);
+    }
     if (U_FAILURE(errorCode)) {
         log_err("u_shapeArabic(expandComposit OOB test) failed: %s\n",
                 u_errorName(errorCode));
