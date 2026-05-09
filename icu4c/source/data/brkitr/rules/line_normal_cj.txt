@@ -3,7 +3,7 @@
 # Copyright (c) 2002-2016  International Business Machines Corporation and
 # others. All Rights Reserved.
 #
-#  file:  line.txt
+#  file:  line_normal_cj.txt
 #
 #         Line Breaking Rules
 #         Implement default line breaking as defined by
@@ -13,8 +13,12 @@
 #         Boundaries between hyphens and following letters are suppressed when
 #         there is a boundary preceding the hyphen. See rule 20.9
 #
-#         This corresponds to CSS line-break=strict (BCP47 -u-lb-strict).
-#         It sets characters of class CJ to behave like NS.
+#         This tailors the line break behavior to correspond to CSS
+#         line-break=normal (BCP47 -u-lb-normal) as defined for Chinese & Japanese.
+#         It sets characters of class CJ to behave like ID.
+#         In addition, it allows breaks:
+#         * before 301C, 30A0 (both NS)
+#         It allows breaking before 201C and after 201D, for zh_Hans, zh_Hant, and ja.
 
 #
 #  Character Classes defined by TR 14.
@@ -35,7 +39,7 @@ $BK = [:LineBreak =  Mandatory_Break:];
 $B2 = [:LineBreak =  Break_Both:];
 $CB = [:LineBreak =  Contingent_Break:];
 $CJ = [:LineBreak =  Conditional_Japanese_Starter:];
-$CL = [:LineBreak =  Close_Punctuation:];
+$CL = [[:LineBreak =  Close_Punctuation:] \u201d];
 # $CM = [:LineBreak =  Combining_Mark:];
 $CP = [:LineBreak =  Close_Parenthesis:];
 $CR = [:LineBreak =  Carriage_Return:];
@@ -47,7 +51,8 @@ $HL = [:LineBreak =  Hebrew_Letter:];
 $HY = [:LineBreak =  Hyphen:];
 $H2 = [:LineBreak =  H2:];
 $H3 = [:LineBreak =  H3:];
-$ID = [:LineBreak =  Ideographic:];
+# CSS Normal tailoring: CJ resolves to ID
+$ID = [[:LineBreak =  Ideographic:] $CJ];
 $IN = [:LineBreak =  Inseperable:];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
@@ -55,13 +60,13 @@ $JV = [:LineBreak =  JV:];
 $JT = [:LineBreak =  JT:];
 $LF = [:LineBreak =  Line_Feed:];
 $NL = [:LineBreak =  Next_Line:];
-# NS includes CJ for CSS strict line breaking.
-$NS = [[:LineBreak =  Nonstarter:] $CJ];
+$NSX = [\u301C \u30A0];
+$NS = [[:LineBreak =  Nonstarter:] - $NSX];
 $NU = [:LineBreak =  Numeric:];
-$OP = [:LineBreak =  Open_Punctuation:];
+$OP = [[:LineBreak =  Open_Punctuation:] \u201c];
 $PO = [:LineBreak =  Postfix_Numeric:];
 $PR = [:LineBreak =  Prefix_Numeric:];
-$QU = [:LineBreak =  Quotation:];
+$QU = [[:LineBreak =  Quotation:] - [\u201c\u201d]];
 $RI = [:LineBreak =  Regional_Indicator:];
 $SA = [:LineBreak =  Complex_Context:];
 $SG = [:LineBreak =  Surrogate:];
@@ -257,6 +262,8 @@ $CAN_CM $CM*  $IS;
 
 
 # LB 16
+# Do not break between closing punctuation and $NS, even with intervening spaces
+# But DO allow a break between closing punctuation and $NSX, don't include it here
 ($CL | $CP) $CM* $SP* $NS;
 
 # LB 17
@@ -313,6 +320,7 @@ $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $C
 # LB 21        x   (BA | HH | HY | NS)
 #           BB x
 #
+# DO allow breaks here before $NSX, so don't include it
 $LB20NonBreaks $CM* ($BA | $HH | $HY | $NS);
 
 
