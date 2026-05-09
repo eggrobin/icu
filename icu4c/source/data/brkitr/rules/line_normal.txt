@@ -3,7 +3,7 @@
 # Copyright (c) 2002-2016  International Business Machines Corporation and
 # others. All Rights Reserved.
 #
-#  file:  line_normal.txt
+#  file:  line.txt
 #
 #         Line Breaking Rules
 #         Implement default line breaking as defined by
@@ -13,10 +13,8 @@
 #         Boundaries between hyphens and following letters are suppressed when
 #         there is a boundary preceding the hyphen. See rule 20.9
 #
-#         This tailors the line break behavior to correspond to CSS
-#         line-break=normal (BCP47 -u-lb-normal) as defined for languages other than
-#         Chinese & Japanese.
-#         It sets characters of class CJ to behave like ID.
+#         This corresponds to CSS line-break=strict (BCP47 -u-lb-strict).
+#         It sets characters of class CJ to behave like NS.
 
 #
 #  Character Classes defined by TR 14.
@@ -49,8 +47,7 @@ $HL = [:LineBreak =  Hebrew_Letter:];
 $HY = [:LineBreak =  Hyphen:];
 $H2 = [:LineBreak =  H2:];
 $H3 = [:LineBreak =  H3:];
-# CSS Normal tailoring: CJ resolves to ID
-$ID = [[:LineBreak =  Ideographic:] $CJ];
+$ID = [:LineBreak =  Ideographic:];
 $IN = [:LineBreak =  Inseperable:];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
@@ -58,7 +55,8 @@ $JV = [:LineBreak =  JV:];
 $JT = [:LineBreak =  JT:];
 $LF = [:LineBreak =  Line_Feed:];
 $NL = [:LineBreak =  Next_Line:];
-$NS = [:LineBreak =  Nonstarter:];
+# NS includes CJ for CSS strict line breaking.
+$NS = [[:LineBreak =  Nonstarter:] $CJ];
 $NU = [:LineBreak =  Numeric:];
 $OP = [:LineBreak =  Open_Punctuation:];
 $PO = [:LineBreak =  Postfix_Numeric:];
