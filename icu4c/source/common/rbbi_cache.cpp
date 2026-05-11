@@ -136,7 +136,7 @@ void RuleBasedBreakIterator::DictionaryCache::populateDictionary(int32_t startPo
     // TODO(egg): This is all a brittle hack replacing a slightly worse hack.
     // The right way to do that would be to figure out here whether we are word
     // breaking or something else.
-    // It would probably be a good idea to actual look at the contents of
+    // It would probably also be a good idea to actually look at the contents of
     // dictionary-based segments to avoid everything Thai boundary being
     // classified as a number if there is a following number.
     fOtherRuleStatusIndex = otherRuleStatus >= UBRK_WORD_LETTER ? otherRuleStatus : 0;
