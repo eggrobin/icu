@@ -1256,7 +1256,7 @@ Calls to xxx will return an implementor of this interface.  \u2029•</data>
 
 # Empty String
 <line>
-<data><100></data>
+<data>•</data>
 
 # Bug #13664 Mixed Thai & English text had different boundaries between forward & reverse.
 #

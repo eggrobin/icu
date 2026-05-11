@@ -125,7 +125,21 @@ void RuleBasedBreakIterator::DictionaryCache::populateDictionary(int32_t startPo
 
     reset();
     fFirstRuleStatusIndex = firstRuleStatus;
-    fOtherRuleStatusIndex = otherRuleStatus;
+    // We have a rule-based segment whose final status is otherRuleStatus.
+    // If otherRuleStatus is at least UBRK_WORD_LETTER (200), we are doing word
+    // segmentation, this is some kind of word, and the dictionary-based
+    // boundaries within the segment are ends of the same kind of word.
+    // If it is below that (in practice, that means 100), we could be looking at
+    // a number in word segmentation, but numbers are not in the dictionary set;
+    // or we could be looking at a rule-based segment ending with a hard break
+    // in line breaking, in which case the dictionary-based breaks are not hard.
+    // TODO(egg): This is all a brittle hack replacing a slightly worse hack.
+    // The right way to do that would be to figure out here whether we are word
+    // breaking or something else.
+    // It would probably be a good idea to actual look at the contents of
+    // dictionary-based segments to avoid everything Thai boundary being
+    // classified as a number if there is a following number.
+    fOtherRuleStatusIndex = otherRuleStatus >= UBRK_WORD_LETTER ? otherRuleStatus : 0;
 
     int32_t rangeStart = startPos;
     int32_t rangeEnd = endPos;
