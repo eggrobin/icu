@@ -60,7 +60,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::following(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         U_ASSERT(r > fromPos);
         *result = r;
-        *statusIndex = fOtherRuleStatusIndex;
+        *statusIndex = fBI->fData->fStatusMaxIdx > 2 || r == fLimit ? fOtherRuleStatusIndex : 0;
         return true;
     }
 
@@ -70,7 +70,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::following(int32_t fromPos, int32_
         r= fBreaks.elementAti(fPositionInCache);
         if (r > fromPos) {
             *result = r;
-            *statusIndex = fOtherRuleStatusIndex;
+            *statusIndex = fBI->fData->fStatusMaxIdx > 2 || r == fLimit ? fOtherRuleStatusIndex : 0;
             return true;
         }
     }
@@ -97,7 +97,9 @@ UBool RuleBasedBreakIterator::DictionaryCache::preceding(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         U_ASSERT(r < fromPos);
         *result = r;
-        *statusIndex = ( r== fStart) ? fFirstRuleStatusIndex : fOtherRuleStatusIndex;
+        *statusIndex = (r == fStart)                   ? fFirstRuleStatusIndex
+                       : fBI->fData->fStatusMaxIdx > 2 ? fOtherRuleStatusIndex
+                                                       : 0;
         return true;
     }
 
@@ -110,7 +112,9 @@ UBool RuleBasedBreakIterator::DictionaryCache::preceding(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         if (r < fromPos) {
             *result = r;
-            *statusIndex = ( r == fStart) ? fFirstRuleStatusIndex : fOtherRuleStatusIndex;
+            *statusIndex = (r == fStart)                   ? fFirstRuleStatusIndex
+                           : fBI->fData->fStatusMaxIdx > 2 ? fOtherRuleStatusIndex
+                                                           : 0;
             return true;
         }
     }
@@ -125,23 +129,7 @@ void RuleBasedBreakIterator::DictionaryCache::populateDictionary(int32_t startPo
 
     reset();
     fFirstRuleStatusIndex = firstRuleStatus;
-    // We have a rule-based segment whose final status is otherRuleStatus.
-    // If otherRuleStatus is at least UBRK_WORD_LETTER (200), we are doing word
-    // segmentation, this is some kind of word, and the dictionary-based
-    // boundaries within the segment are ends of the same kind of word.
-    // If it is below that (in practice, that means 100), we could be looking at
-    // a number in word segmentation, but numbers are not in the dictionary set;
-    // or we could be looking at a rule-based segment ending with a hard break
-    // in line breaking, in which case the dictionary-based breaks are not hard.
-    // TODO(egg): This is all a brittle hack replacing a slightly worse hack.
-    // The right way to do that would be to figure out here whether we are word
-    // breaking or something else.
-    // It would probably also be a good idea to actually look at the contents of
-    // dictionary-based segments to avoid everything Thai boundary being
-    // classified as a number if there is a following number.
-    const int32_t i = otherRuleStatus + fBI->fData->fRuleStatusTable[otherRuleStatus];
-    const int32_t finalStatusValue = fBI->fData->fRuleStatusTable[i];
-    fOtherRuleStatusIndex = finalStatusValue >= UBRK_WORD_LETTER ? otherRuleStatus : 0;
+    fOtherRuleStatusIndex = otherRuleStatus;
 
     int32_t rangeStart = startPos;
     int32_t rangeEnd = endPos;
