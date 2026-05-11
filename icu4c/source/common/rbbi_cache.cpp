@@ -139,7 +139,9 @@ void RuleBasedBreakIterator::DictionaryCache::populateDictionary(int32_t startPo
     // It would probably also be a good idea to actually look at the contents of
     // dictionary-based segments to avoid everything Thai boundary being
     // classified as a number if there is a following number.
-    fOtherRuleStatusIndex = otherRuleStatus >= UBRK_WORD_LETTER ? otherRuleStatus : 0;
+    const int32_t i = otherRuleStatus + fBI->fData->fRuleStatusTable[otherRuleStatus];
+    const int32_t finalStatusValue = fBI->fData->fRuleStatusTable[i];
+    fOtherRuleStatusIndex = finalStatusValue >= UBRK_WORD_LETTER ? otherRuleStatus : 0;
 
     int32_t rangeStart = startPos;
     int32_t rangeEnd = endPos;
