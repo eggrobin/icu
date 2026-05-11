@@ -1078,21 +1078,21 @@ Calls to xxx will return an implementor of this interface.  \u2029•</data>
 
 # 2b  Always break at end of text
 
-<data>•  •\u00A1•</data>
-<data>•  •\u0041•</data>
-<data>•  •\u0009•</data>
-<data>•  •\u00B4•</data>
+<data>•  •\u00A1<100></data>
+<data>•  •\u0041<100></data>
+<data>•  •\u0009<100></data>
+<data>•  •\u00B4<100></data>
 <data>•    \u000C<100></data>    # LB3C  × BK
-<data>•  •\u2014•</data>
-<data>•  •\uFFFC•</data>
-<data>•   \u0029•</data>    # LB 8   × CL
+<data>•  •\u2014<100></data>
+<data>•  •\uFFFC<100></data>
+<data>•   \u0029<100></data>    # LB 8   × CL
 # <data>• • \u0301•</data>    # LB 7a   Treat SP CM* as if it were ID  #TODO:  SP CM
-<data>•   \u0021•</data>    # LB 8   × EX
+<data>•   \u0021<100></data>    # LB 8   × EX
 #<data>•   \u00A0•</data>    # LB 11b   × GL   TODO:  fix.
-<data>•  •\u002D•</data>
-<data>•  •\u4E00•</data>
-<data>•  •\u2024•</data>
-<data>•   \u002C•</data>    # LB 8   × IS
+<data>•  •\u002D<100></data>
+<data>•  •\u4E00<100></data>
+<data>•  •\u2024<100></data>
+<data>•   \u002C<100></data>    # LB 8   × IS
 <data>•   \u000A<100></data>    # LB3C   × ( BK | CR | LF | NL )
 <data>•  •\u0E5A•</data>
 <data>•  •\u0032•</data>
@@ -2207,14 +2207,14 @@ Bangkok)•</data>
 <data>•« « Nesting » »•</data>
 <data>•子•曰：•“学•而•时•习•之，•不•亦•说•乎？•有•朋•自•远•方•来，•不•亦•乐•乎？•人•不•知•而•不•愠，•不•亦•君•子•乎？”•</data>
 <data>•子•贡•曰：•“贫•而•无•谄，•富•而•无•骄，•何•如？”•子•曰：•“可•也。•未•若•贫•而•乐，•富•而•好•礼•者•也”。•子•贡•曰：•“《诗》•云：•‘如•切•如•磋，•如•琢•如•磨。’•其•斯•之•谓•与？”•子•曰：•“赐•也，•始•可•与•言•《诗》•已•矣！•吿•诸•往•而•知•来•者。”•</data>
-<data>•哪•一•所•中•国•学•校•乃•“为•各•省•派•往•日•本•游•学•之•首•倡”？•</data>
-<data>•哪•个•商•标•以•人•名•为•名，•因•特•色•小•吃•“五•台•杂•烩•汤”•而•入•选•“新•疆•老•字•号”？•</data>
-<data>•毕•士•悌•（1901•年•—•1936•年）•又•名•“杨•林”，•朝•鲜•籍•红•军•将•领•</data>
-<data>•Anmerkung: •„White“ •bzw. •‚白•人‘ •– •in •der •Amtlichen •Statistik•</data>
-<data>•« Complex »« chaining » •</data>
-<data>•« .618 »•</data>  # Interaction with the ICU tailoring to break before such numbers.
+<data>•哪•一•所•中•国•学•校•乃•“为•各•省•派•往•日•本•游•学•之•首•倡”？<100></data>
+<data>•哪•个•商•标•以•人•名•为•名，•因•特•色•小•吃•“五•台•杂•烩•汤”•而•入•选•“新•疆•老•字•号”？<100></data>
+<data>•毕•士•悌•（1901•年•—•1936•年）•又•名•“杨•林”，•朝•鲜•籍•红•军•将•领<100></data>
+<data>•Anmerkung: •„White“ •bzw. •‚白•人‘ •– •in •der •Amtlichen •Statistik<100></data>
+<data>•« Complex »« chaining » <100></data>
+<data>•« .618 »<100></data>  # Interaction with the ICU tailoring to break before such numbers.
 
 # A hyphen following non-breaking space that carries an intervening combining
 # mark is treated as word-initial; by LB20a it has no break opportunity after
 # it.  A bug in ICU 76 incorrectly handled that case (ICU-22986).
-<data>• ̄-k•</data>
+<data>• ̄-k<100></data>
