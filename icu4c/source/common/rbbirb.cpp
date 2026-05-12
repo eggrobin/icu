@@ -341,9 +341,11 @@ void RBBIRuleBuilder::optimizeTables() {
         didSomething = false;
 
         // Begin looking for duplicates with char class 3.
-        // Classes 0, 1 and 2 are special; they are unused, {bof} and {eof} respectively,
+        // Classes 0 and 1 are special; they are unused and {bof} respectively,
         // and should not have other categories merged into them.
-        IntPair duplPair = {3, 0};
+        // We allow merging categories *into* class 2 {eof} (but not the
+        // reverse, so that eof remains in class 2).
+        IntPair duplPair = {2, 0};
         while (fForwardTable->findDuplCharClassFrom(&duplPair)) {
             fSetBuilder->mergeCategories(duplPair);
             fForwardTable->removeColumn(duplPair.second);
