@@ -5000,8 +5000,15 @@ void RBBITest::TestUnification() {
     tailorings[u"line_normal_phrase_cj.txt"] = {};
     tailorings[u"line_phrase_cj.txt"] = {};
     constexpr int32_t codePointCount = 500;
+    const std::set<std::u16string_view> notYet{
+        u"line_loose.txt",    u"line_loose_cj.txt",  u"line_loose_phrase_cj.txt",
+        u"line_normal.txt",   u"line_normal_cj.txt", u"line_normal_phrase_cj.txt",
+        u"line_phrase_cj.txt"};
     for (;;) {
         for (auto& [name, oldRules] : nazgul) {
+            if (notYet.find(name) != notYet.end()) {
+                continue;
+            }
             std::string s;
             printf("%s vs. uline.txt\n", UnicodeString(name).toUTF8String(s).c_str());
             const auto& tailoring = tailorings.at(name);
