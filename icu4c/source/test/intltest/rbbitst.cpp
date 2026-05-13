@@ -17,8 +17,11 @@
 #include <algorithm>
 #include <array>
 #include <exception>  // For std::terminate.
+#include <filesystem>
+#include <fstream>
 #include <cinttypes>
 #include <list>
+#include <map>
 #include <optional>
 #include <random>
 #include <set>
@@ -40,6 +43,7 @@
 #include "unicode/schriter.h"
 #include "unicode/uchar.h"
 #include "unicode/utf16.h"
+#include "unicode/utfiterator.h"
 #include "unicode/ucnv.h"
 #include "unicode/uniset.h"
 #include "unicode/uscript.h"
@@ -158,6 +162,8 @@ void RBBITest::runIndexedTest( int32_t index, UBool exec, const char* &name, cha
     TESTCASE_AUTO(TestBug22585);
     TESTCASE_AUTO(TestBug22602);
     TESTCASE_AUTO(TestBug22636);
+
+    TESTCASE_AUTO(TestUnification);
 
 #if U_ENABLE_TRACING
     TESTCASE_AUTO(TestTraceCreateCharacter);
@@ -4926,5 +4932,151 @@ void RBBITest::TestBug22581() {
     UErrorCode ec {U_ZERO_ERROR};
 
     RuleBasedBreakIterator bi(ruleStr, pe, ec);
+}
+
+namespace {
+RuleBasedBreakIterator parseRulesFromFile(std::filesystem::path path) {
+    std::string utf8rules;
+    std::ifstream file(path);
+    for (;;) {
+        utf8rules.push_back(0);
+        file.get(utf8rules.back());
+        if (file.eof()) {
+            utf8rules.pop_back();
+          break;
+        }
+    }
+    auto rules = UnicodeString::fromUTF8(utf8rules);
+    UErrorCode status = U_ZERO_ERROR;
+    UParseError parseError;
+    RuleBasedBreakIterator result(rules, parseError, status);
+    if (U_FAILURE(status)) {
+        printf("%s(%d,%d): %s %s\n", path.u8string().c_str(), parseError.line, parseError.offset,
+               u_errorName(status), utf8rules.c_str());
+        std::terminate();
+    }
+    return result;
+}
+} // namespace
+
+void RBBITest::TestUnification() {
+    auto rulesDirectory = std::filesystem::path(pathToDataDirectory()) / "brkitr" / "rules";
+    std::map<std::u16string, RuleBasedBreakIterator> nazgul;
+    for (const std::filesystem::directory_entry entry :
+         std::filesystem::directory_iterator(rulesDirectory)) {
+        // TODO(egg): In C++20, use starts_with.
+        if (entry.path().extension() == ".txt" &&
+            UnicodeString(entry.path().filename().u16string()).startsWith(u"line")) {
+            printf("parsing %s...\n", entry.path().filename().string().c_str());
+            nazgul.emplace(entry.path().filename().u16string(), parseRulesFromFile(entry.path()));
+        }
+    }
+    assertEquals("Nine for Mortal Men doomed to die", 9, nazgul.size());
+    RuleBasedBreakIterator oneToRuleThemAll = parseRulesFromFile(rulesDirectory / "uline.txt");
+    printf("building partition...\n");
+    std::map<std::vector<int>, UnicodeSet> partitionBuilder;
+    for (char32_t cp = 0; cp <= 0x10FFFF; ++cp) {
+        std::vector<int> key;
+        for (const auto &[name, rules] : nazgul) {
+            key.push_back(ucptrie_get(rules.fData->fTrie, cp));
+        }
+        key.push_back(ucptrie_get(oneToRuleThemAll.fData->fTrie, cp));
+        partitionBuilder[key].add(cp);
+    }
+    std::vector<UnicodeSet> partition;
+    for (const auto &[_, part] : partitionBuilder) {
+        partition.push_back(part);
+    }
+    printf("Partitions has %" PRIuPTR " parts\n", partition.size());
+    RandomNumberGenerator rng(defaultSeed);
+    std::map<std::u16string, std::map<char32_t, char32_t>> tailorings;
+    tailorings[u"line.txt"] = {};
+    tailorings[u"line_cj.txt"] = {{u'\u201d', u'}'}, {u'\u201c', u'{'}};
+    tailorings[u"line_loose.txt"] = {};
+    tailorings[u"line_loose_cj.txt"] = {};
+    tailorings[u"line_loose_phrase_cj.txt"] = {};
+    tailorings[u"line_normal.txt"] = {};
+    tailorings[u"line_normal_cj.txt"] = {};
+    tailorings[u"line_normal_phrase_cj.txt"] = {};
+    tailorings[u"line_phrase_cj.txt"] = {};
+    constexpr int32_t codePointCount = 500;
+    for (;;) {
+        for (auto& [name, oldRules] : nazgul) {
+            std::string s;
+            printf("%s vs. uline.txt\n", UnicodeString(name).toUTF8String(s).c_str());
+            const auto& tailoring = tailorings.at(name);
+            UnicodeString reference;
+            UnicodeString remapped;
+            for (int i = 0; i < codePointCount; ++i) {
+                const UnicodeSet &part = partition[rng() % partition.size()];
+                const UChar32 cp = part.charAt(rng() % part.size());
+                reference.append(cp);
+                auto it = tailoring.find(cp);
+                const UChar32 remappedCP = it == tailoring.end() ? cp : it->second;
+                remapped.append(remappedCP);
+            }
+            oldRules.setText(reference);
+            oneToRuleThemAll.setText(remapped);
+            std::vector<int> oldBreaks(codePointCount + 1, -1);
+            const auto referenceCodePoints =
+                header::utfStringCodePoints<char32_t, UTF_BEHAVIOR_FFFD>(reference);
+            {
+                auto it = referenceCodePoints.begin();
+                int i = 0;
+                while (oldRules.next() != RuleBasedBreakIterator::DONE) {
+                    while ((it == referenceCodePoints.end() ? reference.end() : it->begin()) -
+                               reference.begin() !=
+                           oldRules.current()) {
+                        ++it;
+                        ++i;
+                    }
+                    oldBreaks[i] = oldRules.getRuleStatus();
+                }
+            }
+            std::vector<int> newBreaks(codePointCount + 1, -1);
+            const auto remappedCodePoints =
+                header::utfStringCodePoints<char32_t, UTF_BEHAVIOR_SURROGATE>(remapped);
+            {
+                auto it = remappedCodePoints.begin();
+                int i = 0;
+                while (oneToRuleThemAll.next() != RuleBasedBreakIterator::DONE) {
+                    while ((it == remappedCodePoints.end() ? remapped.end() : it->begin()) -
+                               remapped.begin() !=
+                           oneToRuleThemAll.current()) {
+                        ++it;
+                        ++i;
+                    }
+                    newBreaks[i] = oneToRuleThemAll.getRuleStatus();
+                }
+            }
+            if (newBreaks != oldBreaks) {
+                auto it = referenceCodePoints.begin();
+                std::string s;
+                printf("  %10s %10s\n", UnicodeString(name).toUTF8String(s).c_str(), "uline.txt");
+                for (int i = 0; i < codePointCount; ++i) {
+                    const UChar32 cp = it++->codePoint();
+                    char name[200]{};
+                    UErrorCode status = U_ZERO_ERROR;
+                    u_charName(cp, U_UNICODE_CHAR_NAME, name, sizeof(name), &status);
+                    auto it = tailoring.find(cp);
+                    char32_t remapped;
+                    char remappedName[200]{};
+                    if (it != tailoring.end()) {
+                        remapped = it->second;
+                        u_charName(remapped, U_UNICODE_CHAR_NAME, remappedName, sizeof(remappedName),
+                                   &status);
+                    }
+                    printf("%s %10s %10s U+%04X %20s %s%s \n",
+                           oldBreaks[i] == newBreaks[i] ? " " : "!",
+                           oldBreaks[i] >= 0 ? "|" : " ",
+                           newBreaks[i] >= 0 ? "|" : " ",
+                           cp,
+                           name,
+                           it == tailoring.end() ? "" : "-> ",
+                           it == tailoring.end() ? "" : remappedName);
+                }
+            }
+        }
+    }
 }
 #endif // #if !UCONFIG_NO_BREAK_ITERATION

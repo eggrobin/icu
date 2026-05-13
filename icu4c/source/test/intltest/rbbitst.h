@@ -108,6 +108,8 @@ public:
     void TestBug22602();
     void TestBug22636();
 
+    void TestUnification();
+
 #if U_ENABLE_TRACING
     void TestTraceCreateCharacter();
     void TestTraceCreateWord();
