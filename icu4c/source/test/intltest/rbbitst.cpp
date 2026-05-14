@@ -4990,21 +4990,128 @@ void RBBITest::TestUnification() {
     printf("Partitions has %" PRIuPTR " parts\n", partition.size());
     RandomNumberGenerator rng(defaultSeed);
     std::map<std::u16string, std::map<char32_t, char32_t>> tailorings;
-    tailorings[u"line.txt"] = {};
-    tailorings[u"line_cj.txt"] = {{u'\u201d', u'}'}, {u'\u201c', u'{'}};
-    tailorings[u"line_loose.txt"] = {};
-    tailorings[u"line_loose_cj.txt"] = {};
+    tailorings[u"line.txt"] = {
+        {U'\U00100000', U'\U000F0000'},
+        {U'\U00100001', U'\U000F0000'},
+        {U'\U00100002', U'\U000F0000'},
+        {U'\U00100003', U'\U000F0000'},
+        {U'\U00100004', U'\U000F0000'},
+        {U'\U00100005', U'\U000F0000'},
+        {U'\U00100006', U'\U000F0000'},
+        {U'\U00100007', U'\U000F0000'},
+        {U'\U00100008', U'\U000F0000'},
+    };
+    tailorings[u"line_cj.txt"] = {
+        {U'\U00100000', U'\U000F0000'},
+        {U'\U00100001', U'\U000F0000'},
+        {U'\U00100002', U'\U000F0000'},
+        {U'\U00100003', U'\U000F0000'},
+        {U'\U00100004', U'\U000F0000'},
+        {U'\U00100005', U'\U000F0000'},
+        {U'\U00100006', U'\U000F0000'},
+        {U'\U00100007', U'\U000F0000'},
+        {U'\U00100008', U'\U000F0000'},
+        // Should probably be mapped to wide characters, but that is a behaviour change.
+        {U'\u201d', U'}'},
+        {U'\u201c', U'{'},
+    };
+    tailorings[u"line_loose.txt"] = {
+        {U'\U00100000', U'\U000F0000'},
+        {U'\U00100001', U'\U000F0000'},
+        {U'\U00100002', U'\U000F0000'},
+        {U'\U00100003', U'\U000F0000'},
+        {U'\U00100004', U'\U000F0000'},
+        {U'\U00100005', U'\U000F0000'},
+        {U'\U00100006', U'\U000F0000'},
+        {U'\U00100007', U'\U000F0000'},
+        {U'\U00100008', U'\U000F0000'},
+    };
+    UErrorCode status;
+    auto cj = UnicodeSet(u"[:lb=CJ:]", status);
+    for (UChar32 cp : cj.codePoints()) {
+        tailorings[u"line_loose.txt"][cp] = U'あ';
+    }
+    // Iteration marks out of NS, $EAST_ASIAN_UNCLASSIFIED.
+    auto iterationMarks = UnicodeSet(u"[\u3005 \u303B \u309D \u309E \u30FD \u30FE]", status);
+    for (UChar32 cp : iterationMarks.codePoints()) {
+        tailorings[u"line_loose.txt"][cp] = U'\U00100000';
+    }
+    // IN - $EastAsian to $NON_EAST_ASIAN_LOOSE_IN.
+    auto neain = UnicodeSet(uR"([[:lb=IN:] - [\p{ea=F}\p{ea=W}\p{ea=H}]])", status);
+    for (UChar32 cp : neain.codePoints()) {
+        tailorings[u"line_loose.txt"][cp] = U'\U00100001';
+    }
+    // IN & $EastAsian to $EAST_ASIAN_LOOSE_IN.
+    auto eain = UnicodeSet(uR"([[:lb=IN:] & [\p{ea=F}\p{ea=W}\p{ea=H}]])", status);
+    for (UChar32 cp : eain.codePoints()) {
+        tailorings[u"line_loose.txt"][cp] = U'\U00100002';
+    }
+    if (U_FAILURE(status)) {
+        puts(u_errorName(status));
+        std::terminate();
+    }
+    assertSuccess("iteration marks", status);
+    tailorings[u"line_loose_cj.txt"] = tailorings[u"line_loose.txt"];
+    tailorings[u"line_loose_cj.txt"][U'\u201d'] = U'}';
+    tailorings[u"line_loose_cj.txt"][U'\u201c'] = U'{';
+    // Fullwidth exclamation and question marks out of EX, $EAST_ASIAN_UNCLASSIFIED.
+    tailorings[u"line_loose_cj.txt"][U'！'] = U'\U00100000';
+    tailorings[u"line_loose_cj.txt"][U'？'] = U'\U00100000';
+    // Pairs of {?,!} out of NS, $NON_EAST_ASIAN_UNCLASSIFIED.
+    auto doubleMarks = UnicodeSet(u"[⁈ ⁇ ‼ ⁉]", status);
+    for (UChar32 cp : doubleMarks.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100003';
+    }
+    // More things out of NS, $EAST_ASIAN_UNCLASSIFIED.
+    auto moreNS = UnicodeSet(u"[〜 ゠ ・･ ； ：]", status);
+    for (UChar32 cp : moreNS.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100000';
+    }
+    // Some ea=Ambiguous PO to NON_EAST_ASIAN_POX.  ea=Ambiguous, so should likely be mapped
+    // to EAST_ASIAN_POX in this ja-zh context, rendering NON_EAST_ASIAN_POX redundant, but that is
+    // a behaviour change.
+    auto neaPOX = UnicodeSet(u"[‰ ′ ″ ‵ ° ℃ ℉]", status);
+    for (UChar32 cp : neaPOX.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100004';
+    }
+    // Some $EastAsian PO to EAST_ASIAN_POX.
+    auto eaPOX = UnicodeSet(u"[％﹪ ￠]", status);
+    for (UChar32 cp : eaPOX.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100005';
+    }
+    // Some ea=Ambiguous PR to NON_EAST_ASIAN_PRX.  ea=Ambiguous, so should likely be mapped
+    // to EAST_ASIAN_PRX in this ja-zh context, rendering NON_EAST_ASIAN_PRX redundant, but that is
+    // a behaviour change.
+    auto neaPRX = UnicodeSet(u"[± ¤ € №]", status);
+    for (UChar32 cp : neaPRX.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100006';
+    }
+    // Some $EastAsian PR to EAST_ASIAN_PRX.
+    auto eaPRX = UnicodeSet(u"[＄﹩ ￡ ￥ ￦]", status);
+    for (UChar32 cp : eaPRX.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100007';
+    }
+    // HH to $LOOSE_DASHES. Needs revisiting in 18.0, as EN DASH will move back out of HH.
+    auto hh = UnicodeSet(u"[:lb=HH:]", status);
+    for (UChar32 cp : hh.codePoints()) {
+        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100008';
+    }
     tailorings[u"line_loose_phrase_cj.txt"] = {};
     tailorings[u"line_normal.txt"] = {};
     tailorings[u"line_normal_cj.txt"] = {};
     tailorings[u"line_normal_phrase_cj.txt"] = {};
     tailorings[u"line_phrase_cj.txt"] = {};
     constexpr int32_t codePointCount = 500;
-    const std::set<std::u16string_view> notYet{
-        u"line_loose.txt",    u"line_loose_cj.txt",  u"line_loose_phrase_cj.txt",
-        u"line_normal.txt",   u"line_normal_cj.txt", u"line_normal_phrase_cj.txt",
-        u"line_phrase_cj.txt"};
+    const std::set<std::u16string_view> notYet{u"line_loose_phrase_cj.txt", u"line_normal.txt",
+                                               u"line_normal_cj.txt", u"line_normal_phrase_cj.txt",
+                                               u"line_phrase_cj.txt"};
     for (;;) {
+        UnicodeString reference;
+        for (int i = 0; i < codePointCount; ++i) {
+            const UnicodeSet &part = partition[rng() % partition.size()];
+            const UChar32 cp = part.charAt(rng() % part.size());
+            reference.append(cp);
+        }
         for (auto& [name, oldRules] : nazgul) {
             if (notYet.find(name) != notYet.end()) {
                 continue;
@@ -5012,14 +5119,12 @@ void RBBITest::TestUnification() {
             std::string s;
             printf("%s vs. uline.txt\n", UnicodeString(name).toUTF8String(s).c_str());
             const auto& tailoring = tailorings.at(name);
-            UnicodeString reference;
             UnicodeString remapped;
-            for (int i = 0; i < codePointCount; ++i) {
-                const UnicodeSet &part = partition[rng() % partition.size()];
-                const UChar32 cp = part.charAt(rng() % part.size());
-                reference.append(cp);
-                auto it = tailoring.find(cp);
-                const UChar32 remappedCP = it == tailoring.end() ? cp : it->second;
+            for (const auto codeUnits :
+                 header::utfStringCodePoints<char32_t, UTF_BEHAVIOR_SURROGATE>(reference)) {
+                auto it = tailoring.find(codeUnits.codePoint());
+                const UChar32 remappedCP =
+                    it == tailoring.end() ? codeUnits.codePoint() : it->second;
                 remapped.append(remappedCP);
             }
             oldRules.setText(reference);
@@ -5064,13 +5169,13 @@ void RBBITest::TestUnification() {
                     const UChar32 cp = it++->codePoint();
                     char name[200]{};
                     UErrorCode status = U_ZERO_ERROR;
-                    u_charName(cp, U_UNICODE_CHAR_NAME, name, sizeof(name), &status);
+                    u_charName(cp, U_EXTENDED_CHAR_NAME, name, sizeof(name), &status);
                     auto it = tailoring.find(cp);
                     char32_t remapped;
                     char remappedName[200]{};
                     if (it != tailoring.end()) {
                         remapped = it->second;
-                        u_charName(remapped, U_UNICODE_CHAR_NAME, remappedName, sizeof(remappedName),
+                        u_charName(remapped, U_EXTENDED_CHAR_NAME, remappedName, sizeof(remappedName),
                                    &status);
                     }
                     printf("%s %10s %10s U+%04X %20s %s%s \n",

@@ -23,13 +23,26 @@
 !!chain;
 !!quoted_literals_only;
 
+$NON_EAST_ASIAN_UNCLASSIFIED = [\x{100003}];
+$EAST_ASIAN_UNCLASSIFIED     = [\x{100000}];
+$UNCLASSIFIED                = [$NON_EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_UNCLASSIFIED];
+$NON_EAST_ASIAN_LOOSE_IN     = [\x{100001}];
+$EAST_ASIAN_LOOSE_IN         = [\x{100002}];
+$LOOSE_IN                    = [$NON_EAST_ASIAN_LOOSE_IN $EAST_ASIAN_LOOSE_IN];
+$NON_EAST_ASIAN_POX          = [\x{100004}];
+$EAST_ASIAN_POX              = [\x{100005}];
+$POX                         = [$NON_EAST_ASIAN_POX $EAST_ASIAN_POX];
+$NON_EAST_ASIAN_PRX          = [\x{100006}];
+$EAST_ASIAN_PRX              = [\x{100007}];
+$PRX                         = [$NON_EAST_ASIAN_PRX $EAST_ASIAN_PRX];
+$LOOSE_DASH                = [\x{100008}];
 $AI = [:LineBreak =  Ambiguous:];
 $AK = [:LineBreak =  Aksara:];
 $AL = [:LineBreak =  Alphabetic:];
 $AP = [:LineBreak =  Aksara_Prebase:];
 $AS = [:LineBreak =  Aksara_Start:];
 $BA = [:LineBreak =  Break_After:];
-$HH = [:LineBreak =  Unambiguous_Hyphen:];
+$HH = [[:LineBreak =  Unambiguous_Hyphen:] $LOOSE_DASH];
 $BB = [:LineBreak =  Break_Before:];
 $BK = [:LineBreak =  Mandatory_Break:];
 $B2 = [:LineBreak =  Break_Both:];
@@ -48,7 +61,7 @@ $HY = [:LineBreak =  Hyphen:];
 $H2 = [:LineBreak =  H2:];
 $H3 = [:LineBreak =  H3:];
 $ID = [:LineBreak =  Ideographic:];
-$IN = [:LineBreak =  Inseperable:];
+$IN = [[:LineBreak =  Inseperable:] $LOOSE_IN $EAST_ASIAN_LOOSE_IN];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
 $JV = [:LineBreak =  JV:];
@@ -70,11 +83,11 @@ $SY = [:LineBreak =  Break_Symbols:];
 $VF = [:LineBreak =  Virama_Final:];
 $VI = [:LineBreak =  Virama:];
 $WJ = [:LineBreak =  Word_Joiner:];
-$XX = [:LineBreak =  Unknown:];
+$XX = [[:LineBreak =  Unknown:]-[ $UNCLASSIFIED $LOOSE_IN $POX $PRX $LOOSE_DASH ]];
 $ZW = [:LineBreak =  ZWSpace:];
 $ZWJ = [:LineBreak = ZWJ:];
 
-$EastAsian = [\p{ea=F}\p{ea=W}\p{ea=H}];
+$EastAsian = [ [\p{ea=F}\p{ea=W}\p{ea=H}] $EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_LOOSE_IN $EAST_ASIAN_POX $EAST_ASIAN_PRX ];
 
 $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 
@@ -117,7 +130,7 @@ $CANT_CM = [ $SP $BK $CR $LF $NL $ZW $CM];       # Bases that can't take CMs
 # AL_FOLLOW  set of chars that can unconditionally follow an AL
 #            Needed in rules where stand-alone $CM s are treated as AL.
 #
-$AL_FOLLOW      = [$BK $CR $LF $NL $ZW $SP $CL $CP $EX $HL $IS $SY $WJ $GL [$OP - $EastAsian] $QU $BA $HH $HY $NS $IN $NU $PR $PO $ALPlus];
+$AL_FOLLOW      = [$BK $CR $LF $NL $ZW $SP $CL $CP $EX $HL $IS $SY $WJ $GL [$OP - $EastAsian] $QU $BA $HH $HY $NS $IN $NU $PR $PO $POX $ALPlus];
 
 # LB 3.
 # A rule
@@ -324,7 +337,8 @@ $CAN_CM $CM*  [\p{Pf} & $QU] $CM* ([\p{Pi} & $QU] $CM* $SP*)+ $SP ($HY | $HH) $C
 # LB 21        x   (BA | HH | HY | NS)
 #           BB x
 #
-$LB20NonBreaks $CM* ($BA | $HH | $HY | $NS);
+[$LB20NonBreaks - $ID] $CM* $LOOSE_DASH;
+$LB20NonBreaks $CM* [ [$BA $HH $HY $NS] - $LOOSE_DASH ];
 
 
 ^$CM+ ($BA | $HH | $HY | $NS);
@@ -343,7 +357,7 @@ $SY $CM* $HL;
 
 # LB 22  Do not break before ellipses
 #
-$LB20NonBreaks $CM*    $IN;
+[$LB20NonBreaks - $LOOSE_IN] $CM*    $IN;
 ^$CM+ $IN;
 
 
@@ -354,6 +368,7 @@ $LB20NonBreaks $CM*    $IN;
 $NU $CM* ($ALPlus | $HL);
 
 # LB 23a
+# Do not include $POX here
 #
 $PR $CM* ($ID | $EB | $EM);
 ($ID | $EB | $EM) $CM*  $PO;
@@ -362,15 +377,16 @@ $PR $CM* ($ID | $EB | $EM);
 #
 # LB 24
 #
-($PR | $PO) $CM* ($ALPlus | $HL);
-($ALPlus | $HL) $CM* ($PR | $PO);
-^$CM+ ($PR | $PO);       # Rule 10, any otherwise unattached CM behaves as AL
+($PR | $PO | $POX) $CM* ($ALPlus | $HL);
+($ALPlus | $HL) $CM* ($PR | $PO | $POX);     # TODO(aheninger): should this be ($PR | $PRX | $PO)
+^$CM+ ($PR | $PO | $POX);       # Rule 10, any otherwise unattached CM behaves as AL
 
 #
 # LB 25   Numbers.
 #
-(($PR | $PO) $CM*)? (($OP | $HY) $CM*)? ($IS $CM*)? $NU ($CM* ($NU | $SY | $IS))*
-    ($CM* ($CL | $CP))? ($CM* ($PR | $PO))?;
+# Here do not include $PRX at the beginning or $POX at the end
+(($PR | $PO | $POX) $CM*)? (($OP | $HY) $CM*)? ($IS $CM*)? $NU ($CM* ($NU | $SY | $IS))*
+    ($CM* ($CL | $CP))? ($CM* ($PR | $PRX | $PO))?;
 
 # LB 26  Do not break a Korean syllable
 #
@@ -379,6 +395,7 @@ $JL $CM* ($JL | $JV | $H2 | $H3);
 ($JT | $H3) $CM* $JT;
 
 # LB 27  Treat korean Syllable Block the same as ID  (don't break it)
+# Do not include $POX or $PRX here
 ($JL | $JV | $JT | $H2 | $H3) $CM* $PO;
 $PR $CM* ($JL | $JV | $JT | $H2 | $H3);
 
