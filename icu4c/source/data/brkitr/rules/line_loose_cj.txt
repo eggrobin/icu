@@ -1,9 +1,7 @@
-# Copyright (C) 2016 and later: Unicode, Inc. and others.
+# Copyright (C) 2022 and later: Unicode, Inc. and others.
 # License & terms of use: http://www.unicode.org/copyright.html
-# Copyright (c) 2002-2016  International Business Machines Corporation and
-# others. All Rights Reserved.
 #
-#  file:  line_loose_cj.txt
+#  file:  line_loose_phrase_cj.txt
 #
 #         Line Breaking Rules
 #         Implement default line breaking as defined by
@@ -28,6 +26,10 @@
 #         * after prefix characters with LineBreak class PR and EastAsianWidth A,F,W;
 #           this includes: 00A4 00B1 20AC 2116 FE69 FF04 FFE1 FFE5 FFE6
 #         It allows breaking before 201C and after 201D, for zh_Hans, zh_Hant, and ja.
+#
+#         The content is the same as line_loose_cj.txt except the following
+#         1. Add CJK into dictionary.
+#         2. Add East Asian Width with class F, W and H into $ALPlus.
 
 
 #
@@ -104,9 +106,18 @@ $CM = [[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]];
 $CMX = [[$CM] - [$ZWJ]];
 
 #   Dictionary character set, for triggering language-based break engines. Currently
-#   limited to LineBreak=Complex_Context (SA).
+#   limited to LineBreak=Complex_Context (SA) and $dictionaryCJK.
 
-$dictionary = [$SA];
+# Add CJK dictionary
+$Han = [:Han:];
+$Katakana = [:Katakana:];
+$Hiragana = [:Hiragana:];
+$HangulSyllable = [\uac00-\ud7a3];
+$ComplexContext = [:LineBreak = Complex_Context:];
+$KanaKanji      = [$Han $Hiragana $Katakana \u30fc];
+$dictionaryCJK  = [$KanaKanji $HangulSyllable];
+$dictionary     = [$ComplexContext $dictionaryCJK];
+
 
 #
 #  Rule LB1.  By default, treat AI  (characters with ambiguous east Asian width),
@@ -115,7 +126,9 @@ $dictionary = [$SA];
 #                               XX  (Unknown, unassigned)
 #                         as $AL  (Alphabetic)
 #
-$ALPlus = [$AL $AI $SG $XX [$SA-[[:Mn:][:Mc:]]]];
+# Let fullwidth-ASCII digits and letters be part of words.
+$FW_alphanum = [\uff10-\uff19\uff21-\uff3a\uff41-\uff5a];
+$ALPlus = [$AL $AI $SG $XX $FW_alphanum [$dictionary-[[:Mn:][:Mc:]]]];
 
 
 ## -------------------------------------------------
