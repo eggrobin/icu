@@ -4989,6 +4989,7 @@ void RBBITest::TestUnification() {
     }
     printf("Partitions has %" PRIuPTR " parts\n", partition.size());
     RandomNumberGenerator rng(defaultSeed);
+    UErrorCode status;
     std::map<std::u16string, std::map<char32_t, char32_t>> tailorings;
     tailorings[u"line.txt"] = {
         {U'\U00100000', U'\U000F0000'},
@@ -5000,34 +5001,31 @@ void RBBITest::TestUnification() {
         {U'\U00100006', U'\U000F0000'},
         {U'\U00100007', U'\U000F0000'},
         {U'\U00100008', U'\U000F0000'},
+        {U'\U00100009', U'\U000F0000'},
+        {U'\U0010000A', U'\U000F0000'},
+        {U'\U0010000B', U'\U000F0000'},
+        {U'\U0010000C', U'\U000F0000'},
+        {U'\U0010000D', U'\U000F0000'},
+        {U'\U0010000E', U'\U000F0000'},
     };
-    tailorings[u"line_cj.txt"] = {
-        {U'\U00100000', U'\U000F0000'},
-        {U'\U00100001', U'\U000F0000'},
-        {U'\U00100002', U'\U000F0000'},
-        {U'\U00100003', U'\U000F0000'},
-        {U'\U00100004', U'\U000F0000'},
-        {U'\U00100005', U'\U000F0000'},
-        {U'\U00100006', U'\U000F0000'},
-        {U'\U00100007', U'\U000F0000'},
-        {U'\U00100008', U'\U000F0000'},
-        // Should probably be mapped to wide characters, but that is a behaviour change.
-        {U'\u201d', U'}'},
-        {U'\u201c', U'{'},
-    };
-    tailorings[u"line_loose.txt"] = {
-        {U'\U00100000', U'\U000F0000'},
-        {U'\U00100001', U'\U000F0000'},
-        {U'\U00100002', U'\U000F0000'},
-        {U'\U00100003', U'\U000F0000'},
-        {U'\U00100004', U'\U000F0000'},
-        {U'\U00100005', U'\U000F0000'},
-        {U'\U00100006', U'\U000F0000'},
-        {U'\U00100007', U'\U000F0000'},
-        {U'\U00100008', U'\U000F0000'},
-    };
-    UErrorCode status;
+    tailorings[u"line_cj.txt"] = tailorings[u"line.txt"];
+    // Should probably be mapped to wide characters, but that is a behaviour change.
+    tailorings[u"line_cj.txt"][U'\u201d'] = U'}';
+    tailorings[u"line_cj.txt"][U'\u201c'] = U'{';
+    tailorings[u"line_normal.txt"] = tailorings[u"line.txt"];
     auto cj = UnicodeSet(u"[:lb=CJ:]", status);
+    for (UChar32 cp : cj.codePoints()) {
+        tailorings[u"line_normal.txt"][cp] = U'あ';
+    }
+    tailorings[u"line_normal_cj.txt"] = tailorings[u"line_normal.txt"];
+    tailorings[u"line_normal_cj.txt"][U'\u201d'] = U'}';
+    tailorings[u"line_normal_cj.txt"][U'\u201c'] = U'{';
+    // A couple of things out of NS, $EAST_ASIAN_UNCLASSIFIED.
+    auto someNS = UnicodeSet(u"[〜 ゠]", status);
+    for (UChar32 cp : someNS.codePoints()) {
+        tailorings[u"line_normal_cj.txt"][cp] = U'\U00100000';
+    }
+    tailorings[u"line_loose.txt"] = tailorings[u"line.txt"];
     for (UChar32 cp : cj.codePoints()) {
         tailorings[u"line_loose.txt"][cp] = U'あ';
     }
@@ -5049,11 +5047,6 @@ void RBBITest::TestUnification() {
     for (UChar32 cp : eain.codePoints()) {
         tailorings[u"line_loose.txt"][cp] = U'\U00100002';
     }
-    if (U_FAILURE(status)) {
-        puts(u_errorName(status));
-        std::terminate();
-    }
-    assertSuccess("iteration marks", status);
     tailorings[u"line_loose_cj.txt"] = tailorings[u"line_loose.txt"];
     tailorings[u"line_loose_cj.txt"][U'\u201d'] = U'}';
     tailorings[u"line_loose_cj.txt"][U'\u201c'] = U'{';
@@ -5100,31 +5093,82 @@ void RBBITest::TestUnification() {
     for (UChar32 cp : hh.codePoints()) {
         tailorings[u"line_loose_cj.txt"][cp] = U'\U00100008';
     }
-    tailorings[u"line_loose_phrase_cj.txt"] = {};
-    tailorings[u"line_normal.txt"] = tailorings[u"line.txt"];
-    for (UChar32 cp : cj.codePoints()) {
-        tailorings[u"line_normal.txt"][cp] = U'あ';
+    tailorings[u"line_phrase_cj.txt"] = tailorings[u"line_cj.txt"];
+    tailorings[u"line_normal_phrase_cj.txt"] = tailorings[u"line_normal_cj.txt"];
+    tailorings[u"line_loose_phrase_cj.txt"] = tailorings[u"line_loose_cj.txt"];
+    for (const auto name : std::array<std::u16string, 3>{
+             u"line_phrase_cj.txt",
+             u"line_normal_phrase_cj.txt",
+             u"line_loose_phrase_cj.txt",
+         }) {
+        auto &tailoring = tailorings[name];
+        UnicodeSet cjk("[ [ [:Han:] [:Katakana:] [:Hiragana:] [\uAC00-\uD7A3] \u30FC ] ]", status);
+        for (const char32_t cp : cjk.codePoints()) {
+            if (tailoring.find(cp) != tailoring.end()) {
+                if (tailoring[cp] == U'\U00100000') {
+                  tailoring[cp] = U'\U0010000A';
+                } else if (tailoring[cp] == U'あ') {
+                  tailoring[cp] = U'\U00100009';
+                } else {
+                    printf("CJK U+%04X already remaped to U+%04X\n", cp, tailoring[cp]);
+                    std::terminate();
+                }
+            } else {
+                switch (u_getIntPropertyValue(cp, UCHAR_LINE_BREAK)) {
+                case U_LB_IDEOGRAPHIC:
+                    tailoring[cp] = U'\U00100009';
+                    break;
+                case U_LB_ALPHABETIC:
+                    tailoring[cp] = U'\U0010000A';
+                    break;
+                case U_LB_COMBINING_MARK:
+                    tailoring[cp] = U'\U0010000B';
+                    break;
+                case U_LB_NONSTARTER:
+                    tailoring[cp] = U'\U0010000C';
+                    break;
+                case U_LB_H2:
+                    tailoring[cp] = U'\U0010000D';
+                    break;
+                case U_LB_H3:
+                    tailoring[cp] = U'\U0010000E';
+                    break;
+                case U_LB_CONDITIONAL_JAPANESE_STARTER:
+                    tailoring[cp] = name == u"line_phrase_cj.txt" ? U'\U0010000C' : U'\U00100009';
+                    break;
+                default:
+                    printf("Unexpected lb value for U+%04X\n", cp);
+                    std::terminate();
+                }
+            }
+        }
+        UnicodeSet fullwidthAlphanum("[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]", status);
+        for (const char32_t cp : fullwidthAlphanum.codePoints()) {
+            tailoring[cp] = U'💯';
+        }
     }
-    tailorings[u"line_normal_cj.txt"] = tailorings[u"line_normal.txt"];
-    tailorings[u"line_normal_cj.txt"][U'\u201d'] = U'}';
-    tailorings[u"line_normal_cj.txt"][U'\u201c'] = U'{';
-    // A couple of things out of NS, $EAST_ASIAN_UNCLASSIFIED.
-    auto someNS = UnicodeSet(u"[〜 ゠]", status);
-    for (UChar32 cp : someNS.codePoints()) {
-        tailorings[u"line_normal_cj.txt"][cp] = U'\U00100000';
+    if (U_FAILURE(status)) {
+        puts(u_errorName(status));
+        std::terminate();
     }
-    tailorings[u"line_normal_phrase_cj.txt"] = {};
-    tailorings[u"line_phrase_cj.txt"] = {};
-    constexpr int32_t codePointCount = 500;
-    const std::set<std::u16string_view> notYet{u"line_loose_phrase_cj.txt",
-                                               u"line_normal_phrase_cj.txt", u"line_phrase_cj.txt"};
-    for (;;) {
+    for (auto const &[name, tailoring] : tailorings) {
+        std::string s;
+        printf("%s tailoring: %" PRIuPTR " code points remapped\n", UnicodeString(name).toUTF8String(s).c_str(),
+               tailoring.size());
+    }
+    assertSuccess("UnicodeSet parsing in tailoring construction", status);
+    constexpr int32_t codePointCount = 4;
+    const std::set<std::u16string_view> notYet{
+             u"line_normal_phrase_cj.txt",
+             u"line_loose_phrase_cj.txt",};
+    for (int n = 0;; ++n) {
         UnicodeString reference;
         for (int i = 0; i < codePointCount; ++i) {
             const UnicodeSet &part = partition[rng() % partition.size()];
             const UChar32 cp = part.charAt(rng() % part.size());
             reference.append(cp);
         }
+        reference = u"\u201C\u303B\U00016FF2\u000A";
         for (auto& [name, oldRules] : nazgul) {
             if (notYet.find(name) != notYet.end()) {
                 continue;
@@ -5156,6 +5200,9 @@ void RBBITest::TestUnification() {
                         ++i;
                     }
                     oldBreaks[i] = oldRules.getRuleStatus();
+                    if (i == 23) {
+                        printf("meow\n");
+                    }
                 }
             }
             std::vector<int> newBreaks(codePointCount + 1, -1);
@@ -5177,7 +5224,8 @@ void RBBITest::TestUnification() {
             if (newBreaks != oldBreaks) {
                 auto it = referenceCodePoints.begin();
                 std::string s;
-                printf("  %10s %10s\n", UnicodeString(name).toUTF8String(s).c_str(), "uline.txt");
+                printf("Test case #%d\n", n);
+                printf("      %10s %10s\n", UnicodeString(name).toUTF8String(s).c_str(), "uline.txt");
                 for (int i = 0; i < codePointCount; ++i) {
                     const UChar32 cp = it++->codePoint();
                     char name[200]{};
@@ -5191,7 +5239,8 @@ void RBBITest::TestUnification() {
                         u_charName(remapped, U_EXTENDED_CHAR_NAME, remappedName, sizeof(remappedName),
                                    &status);
                     }
-                    printf("%s %10s %10s U+%04X %20s %s%s \n",
+                    printf("%3d %s %10s %10s U+%04X %20s %s%s \n",
+                           i,
                            oldBreaks[i] == newBreaks[i] ? " " : "!",
                            oldBreaks[i] >= 0 ? "|" : " ",
                            newBreaks[i] >= 0 ? "|" : " ",
@@ -5200,6 +5249,7 @@ void RBBITest::TestUnification() {
                            it == tailoring.end() ? "" : "-> ",
                            it == tailoring.end() ? "" : remappedName);
                 }
+                std::terminate();
             }
         }
     }

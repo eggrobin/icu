@@ -35,7 +35,14 @@ $POX                         = [$NON_EAST_ASIAN_POX $EAST_ASIAN_POX];
 $NON_EAST_ASIAN_PRX          = [\x{100006}];
 $EAST_ASIAN_PRX              = [\x{100007}];
 $PRX                         = [$NON_EAST_ASIAN_PRX $EAST_ASIAN_PRX];
-$LOOSE_DASH                = [\x{100008}];
+$LOOSE_DASH                  = [\x{100008}];
+$EAST_ASIAN_PHRASE_ID        = [\x{100009}];
+$EAST_ASIAN_PHRASE_AL        = [\x{10000A}];
+$EAST_ASIAN_PHRASE_CM        = [\x{10000B}];
+$EAST_ASIAN_PHRASE_NS        = [\x{10000C}];
+$EAST_ASIAN_PHRASE_H2        = [\x{10000D}];
+$EAST_ASIAN_PHRASE_H3        = [\x{10000E}];
+$EAST_ASIAN_PHRASE           = [$EAST_ASIAN_PHRASE_ID $EAST_ASIAN_PHRASE_AL $EAST_ASIAN_PHRASE_CM $EAST_ASIAN_PHRASE_NS $EAST_ASIAN_PHRASE_H2 $EAST_ASIAN_PHRASE_H3];
 $AI = [:LineBreak =  Ambiguous:];
 $AK = [:LineBreak =  Aksara:];
 $AL = [:LineBreak =  Alphabetic:];
@@ -58,9 +65,9 @@ $EX = [:LineBreak =  Exclamation:];
 $GL = [:LineBreak =  Glue:];
 $HL = [:LineBreak =  Hebrew_Letter:];
 $HY = [:LineBreak =  Hyphen:];
-$H2 = [:LineBreak =  H2:];
-$H3 = [:LineBreak =  H3:];
-$ID = [:LineBreak =  Ideographic:];
+$H2 = [ [:LineBreak =  H2:] $EAST_ASIAN_PHRASE_H2 ];
+$H3 = [ [:LineBreak =  H3:] $EAST_ASIAN_PHRASE_H3 ];
+$ID = [ [:LineBreak =  Ideographic:] $EAST_ASIAN_PHRASE_ID ];
 $IN = [[:LineBreak =  Inseperable:] $LOOSE_IN $EAST_ASIAN_LOOSE_IN];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
@@ -69,7 +76,7 @@ $JT = [:LineBreak =  JT:];
 $LF = [:LineBreak =  Line_Feed:];
 $NL = [:LineBreak =  Next_Line:];
 # NS includes CJ for CSS strict line breaking.
-$NS = [[:LineBreak =  Nonstarter:] $CJ];
+$NS = [[:LineBreak =  Nonstarter:] $CJ $EAST_ASIAN_PHRASE_NS ];
 $NU = [:LineBreak =  Numeric:];
 $OP = [:LineBreak =  Open_Punctuation:];
 $PO = [:LineBreak =  Postfix_Numeric:];
@@ -83,11 +90,11 @@ $SY = [:LineBreak =  Break_Symbols:];
 $VF = [:LineBreak =  Virama_Final:];
 $VI = [:LineBreak =  Virama:];
 $WJ = [:LineBreak =  Word_Joiner:];
-$XX = [[:LineBreak =  Unknown:]-[ $UNCLASSIFIED $LOOSE_IN $POX $PRX $LOOSE_DASH ]];
+$XX = [[:LineBreak =  Unknown:]-[ $UNCLASSIFIED $LOOSE_IN $POX $PRX $LOOSE_DASH $EAST_ASIAN_PHRASE ]];
 $ZW = [:LineBreak =  ZWSpace:];
 $ZWJ = [:LineBreak = ZWJ:];
 
-$EastAsian = [ [\p{ea=F}\p{ea=W}\p{ea=H}] $EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_LOOSE_IN $EAST_ASIAN_POX $EAST_ASIAN_PRX ];
+$EastAsian = [ [\p{ea=F}\p{ea=W}\p{ea=H}] $EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_LOOSE_IN $EAST_ASIAN_POX $EAST_ASIAN_PRX $EAST_ASIAN_PHRASE ];
 
 $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 
@@ -95,13 +102,13 @@ $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 #         list it in the numerous rules that use CM.
 # By LB1, SA characters with general categor of Mn or Mc also resolve to CM.
 
-$CM = [[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]]];
+$CM = [[:LineBreak = Combining_Mark:] $ZWJ [$SA & [[:Mn:][:Mc:]]] $EAST_ASIAN_PHRASE_CM ];
 $CMX = [[$CM] - [$ZWJ]];
 
 #   Dictionary character set, for triggering language-based break engines. Currently
 #   limited to LineBreak=Complex_Context (SA).
 
-$dictionary = [$SA];
+$dictionary = [$SA $EAST_ASIAN_PHRASE];
 
 #
 #  Rule LB1.  By default, treat AI  (characters with ambiguous east Asian width),
@@ -110,7 +117,7 @@ $dictionary = [$SA];
 #                               XX  (Unknown, unassigned)
 #                         as $AL  (Alphabetic)
 #
-$ALPlus = [$AL $AI $SG $XX [$SA-[[:Mn:][:Mc:]]]];
+$ALPlus = [$AL $AI $SG $XX [$SA - [[:Mn:][:Mc:]]] [$EAST_ASIAN_PHRASE - $EAST_ASIAN_PHRASE_CM]];
 
 
 ## -------------------------------------------------
