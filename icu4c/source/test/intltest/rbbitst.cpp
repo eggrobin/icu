@@ -5097,14 +5097,23 @@ void RBBITest::TestUnification() {
         tailorings[u"line_loose_cj.txt"][cp] = U'\U00100008';
     }
     tailorings[u"line_loose_phrase_cj.txt"] = {};
-    tailorings[u"line_normal.txt"] = {};
-    tailorings[u"line_normal_cj.txt"] = {};
+    tailorings[u"line_normal.txt"] = tailorings[u"line.txt"];
+    for (UChar32 cp : cj.codePoints()) {
+        tailorings[u"line_normal.txt"][cp] = U'あ';
+    }
+    tailorings[u"line_normal_cj.txt"] = tailorings[u"line_normal.txt"];
+    tailorings[u"line_normal_cj.txt"][U'\u201d'] = U'}';
+    tailorings[u"line_normal_cj.txt"][U'\u201c'] = U'{';
+    // A couple of things out of NS, $EAST_ASIAN_UNCLASSIFIED.
+    auto someNS = UnicodeSet(u"[〜 ゠]", status);
+    for (UChar32 cp : someNS.codePoints()) {
+        tailorings[u"line_normal_cj.txt"][cp] = U'\U00100000';
+    }
     tailorings[u"line_normal_phrase_cj.txt"] = {};
     tailorings[u"line_phrase_cj.txt"] = {};
     constexpr int32_t codePointCount = 500;
-    const std::set<std::u16string_view> notYet{u"line_loose_phrase_cj.txt", u"line_normal.txt",
-                                               u"line_normal_cj.txt", u"line_normal_phrase_cj.txt",
-                                               u"line_phrase_cj.txt"};
+    const std::set<std::u16string_view> notYet{u"line_loose_phrase_cj.txt",
+                                               u"line_normal_phrase_cj.txt", u"line_phrase_cj.txt"};
     for (;;) {
         UnicodeString reference;
         for (int i = 0; i < codePointCount; ++i) {
