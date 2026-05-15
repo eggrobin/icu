@@ -5037,6 +5037,9 @@ void RBBITest::TestUnification() {
         tailorings[u"line_loose.txt"][cp] = U'\U00100000';
     }
     // IN - $EastAsian to $NON_EAST_ASIAN_LOOSE_IN.
+    // Three of them ea=Ambiguous, should map to $EAST_ASIAN_UNCLASSIFIED.
+    // Two ea=Neutral; but even then I am not sure non-EastAsian is useful.
+    // But that would be a behaviour change, so not now.
     auto neain = UnicodeSet(uR"([[:lb=IN:] - [\p{ea=F}\p{ea=W}\p{ea=H}]])", status);
     for (UChar32 cp : neain.codePoints()) {
         tailorings[u"line_loose.txt"][cp] = U'\U00100001';
@@ -5058,6 +5061,7 @@ void RBBITest::TestUnification() {
     tailorings[u"line_loose_cj.txt"][U'！'] = U'\U00100000';
     tailorings[u"line_loose_cj.txt"][U'？'] = U'\U00100000';
     // Pairs of {?,!} out of NS, $NON_EAST_ASIAN_UNCLASSIFIED.
+    // ea=Neutral, but is that really right in this context?
     auto doubleMarks = UnicodeSet(u"[⁈ ⁇ ‼ ⁉]", status);
     for (UChar32 cp : doubleMarks.codePoints()) {
         tailorings[u"line_loose_cj.txt"][cp] = U'\U00100003';
