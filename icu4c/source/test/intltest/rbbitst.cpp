@@ -5176,7 +5176,6 @@ void RBBITest::TestUnification() {
     assertSuccess("UnicodeSet parsing in tailoring construction", status);
     constexpr int32_t codePointCount = 500;
     const std::set<std::u16string_view> notYet{
-             u"line_normal_phrase_cj.txt",
              u"line_loose_phrase_cj.txt",};
     for (int n = 0;; ++n) {
         UnicodeString reference;
