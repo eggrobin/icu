@@ -48,12 +48,6 @@ UBool RuleBasedBreakIterator::DictionaryCache::following(int32_t fromPos, int32_
         return false;
     }
 
-    int32_t maxStatus = 0;
-    for (int32_t i = 0; i < fBI->fData->fStatusMaxIdx; ++i) {
-        maxStatus = std::max(maxStatus, fBI->fData->fRuleStatusTable[i]);
-    }
-    const bool isWordLike = maxStatus > 100;
-
     // Sequential iteration, move from previous boundary to the following
 
     int32_t r = 0;
@@ -66,7 +60,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::following(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         U_ASSERT(r > fromPos);
         *result = r;
-        *statusIndex = isWordLike || r == fLimit ? fOtherRuleStatusIndex : 0;
+        *statusIndex = fOtherRuleStatusIndex;
         return true;
     }
 
@@ -76,7 +70,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::following(int32_t fromPos, int32_
         r= fBreaks.elementAti(fPositionInCache);
         if (r > fromPos) {
             *result = r;
-            *statusIndex = isWordLike || r == fLimit ? fOtherRuleStatusIndex : 0;
+            *statusIndex = fOtherRuleStatusIndex;
             return true;
         }
     }
@@ -89,12 +83,6 @@ UBool RuleBasedBreakIterator::DictionaryCache::preceding(int32_t fromPos, int32_
         fPositionInCache = -1;
         return false;
     }
-
-    int32_t maxStatus = 0;
-    for (int32_t i = 0; i < fBI->fData->fStatusMaxIdx; ++i) {
-        maxStatus = std::max(maxStatus, fBI->fData->fRuleStatusTable[i]);
-    }
-    const bool isWordLike = maxStatus > 100;
 
     if (fromPos == fLimit) {
         fPositionInCache = fBreaks.size() - 1;
@@ -109,9 +97,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::preceding(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         U_ASSERT(r < fromPos);
         *result = r;
-        *statusIndex = (r == fStart) ? fFirstRuleStatusIndex
-                       : isWordLike  ? fOtherRuleStatusIndex
-                                     : 0;
+        *statusIndex = ( r== fStart) ? fFirstRuleStatusIndex : fOtherRuleStatusIndex;
         return true;
     }
 
@@ -124,9 +110,7 @@ UBool RuleBasedBreakIterator::DictionaryCache::preceding(int32_t fromPos, int32_
         r = fBreaks.elementAti(fPositionInCache);
         if (r < fromPos) {
             *result = r;
-            *statusIndex = (r == fStart) ? fFirstRuleStatusIndex
-                           : isWordLike  ? fOtherRuleStatusIndex
-                                         : 0;
+            *statusIndex = ( r == fStart) ? fFirstRuleStatusIndex : fOtherRuleStatusIndex;
             return true;
         }
     }

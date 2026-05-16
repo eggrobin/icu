@@ -4935,6 +4935,17 @@ void RBBITest::TestBug22581() {
 }
 
 namespace {
+
+class TrivialExternalBreakEngine : public ExternalBreakEngine {
+    bool isFor(UChar32 c, const char *locale) const override { return true; }
+    bool handles(UChar32 c) const override { return true; }
+
+    int32_t fillBreaks(UText *text, int32_t start, int32_t end, int32_t *foundBreaks,
+                       int32_t foundBreaksCapacity, UErrorCode &status) const override {
+        return 0;
+    }
+};
+
 RuleBasedBreakIterator parseRulesFromFile(std::filesystem::path path) {
     std::string utf8rules;
     std::ifstream file(path);
@@ -4960,6 +4971,12 @@ RuleBasedBreakIterator parseRulesFromFile(std::filesystem::path path) {
 } // namespace
 
 void RBBITest::TestUnification() {
+    {
+        UErrorCode status;
+        RuleBasedBreakIterator::registerExternalBreakEngine(new TrivialExternalBreakEngine(),
+                                                            status);
+        assertSuccess(u"External break engine registration", status);
+    }
     auto rulesDirectory = std::filesystem::path(pathToDataDirectory()) / "brkitr" / "rules";
     std::map<std::u16string, RuleBasedBreakIterator> nazgul;
     for (const std::filesystem::directory_entry entry :
@@ -5157,7 +5174,7 @@ void RBBITest::TestUnification() {
                tailoring.size());
     }
     assertSuccess("UnicodeSet parsing in tailoring construction", status);
-    constexpr int32_t codePointCount = 4;
+    constexpr int32_t codePointCount = 500;
     const std::set<std::u16string_view> notYet{
              u"line_normal_phrase_cj.txt",
              u"line_loose_phrase_cj.txt",};
@@ -5168,7 +5185,6 @@ void RBBITest::TestUnification() {
             const UChar32 cp = part.charAt(rng() % part.size());
             reference.append(cp);
         }
-        reference = u"\u201C\u303B\U00016FF2\u000A";
         for (auto& [name, oldRules] : nazgul) {
             if (notYet.find(name) != notYet.end()) {
                 continue;
@@ -5200,9 +5216,6 @@ void RBBITest::TestUnification() {
                         ++i;
                     }
                     oldBreaks[i] = oldRules.getRuleStatus();
-                    if (i == 23) {
-                        printf("meow\n");
-                    }
                 }
             }
             std::vector<int> newBreaks(codePointCount + 1, -1);
