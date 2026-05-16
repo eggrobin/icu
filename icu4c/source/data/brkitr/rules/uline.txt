@@ -68,7 +68,7 @@ $HL = [:LineBreak =  Hebrew_Letter:];
 $HY = [:LineBreak =  Hyphen:];
 $H2 = [ [:LineBreak =  H2:] $EAST_ASIAN_PHRASE_H2 ];
 $H3 = [ [:LineBreak =  H3:] $EAST_ASIAN_PHRASE_H3 ];
-$ID = [ [:LineBreak =  Ideographic:] $EAST_ASIAN_PHRASE_ID EAST_ASIAN_ID_AL ];
+$ID = [ [:LineBreak =  Ideographic:] $EAST_ASIAN_PHRASE_ID $EAST_ASIAN_ID_AL ];
 $IN = [[:LineBreak =  Inseperable:] $LOOSE_IN $EAST_ASIAN_LOOSE_IN];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
