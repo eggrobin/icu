@@ -43,6 +43,7 @@ $EAST_ASIAN_PHRASE_NS        = [\x{10000C}];
 $EAST_ASIAN_PHRASE_H2        = [\x{10000D}];
 $EAST_ASIAN_PHRASE_H3        = [\x{10000E}];
 $EAST_ASIAN_PHRASE           = [$EAST_ASIAN_PHRASE_ID $EAST_ASIAN_PHRASE_AL $EAST_ASIAN_PHRASE_CM $EAST_ASIAN_PHRASE_NS $EAST_ASIAN_PHRASE_H2 $EAST_ASIAN_PHRASE_H3];
+$EAST_ASIAN_ID_AL            = [\x{10000F}];
 $AI = [:LineBreak =  Ambiguous:];
 $AK = [:LineBreak =  Aksara:];
 $AL = [:LineBreak =  Alphabetic:];
@@ -67,7 +68,7 @@ $HL = [:LineBreak =  Hebrew_Letter:];
 $HY = [:LineBreak =  Hyphen:];
 $H2 = [ [:LineBreak =  H2:] $EAST_ASIAN_PHRASE_H2 ];
 $H3 = [ [:LineBreak =  H3:] $EAST_ASIAN_PHRASE_H3 ];
-$ID = [ [:LineBreak =  Ideographic:] $EAST_ASIAN_PHRASE_ID ];
+$ID = [ [:LineBreak =  Ideographic:] $EAST_ASIAN_PHRASE_ID EAST_ASIAN_ID_AL ];
 $IN = [[:LineBreak =  Inseperable:] $LOOSE_IN $EAST_ASIAN_LOOSE_IN];
 $IS = [:LineBreak =  Infix_Numeric:];
 $JL = [:LineBreak =  JL:];
@@ -90,11 +91,11 @@ $SY = [:LineBreak =  Break_Symbols:];
 $VF = [:LineBreak =  Virama_Final:];
 $VI = [:LineBreak =  Virama:];
 $WJ = [:LineBreak =  Word_Joiner:];
-$XX = [[:LineBreak =  Unknown:]-[ $UNCLASSIFIED $LOOSE_IN $POX $PRX $LOOSE_DASH $EAST_ASIAN_PHRASE ]];
+$XX = [[:LineBreak =  Unknown:]-[ $UNCLASSIFIED $LOOSE_IN $POX $PRX $LOOSE_DASH $EAST_ASIAN_PHRASE $EAST_ASIAN_ID_AL ]];
 $ZW = [:LineBreak =  ZWSpace:];
 $ZWJ = [:LineBreak = ZWJ:];
 
-$EastAsian = [ [\p{ea=F}\p{ea=W}\p{ea=H}] $EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_LOOSE_IN $EAST_ASIAN_POX $EAST_ASIAN_PRX $EAST_ASIAN_PHRASE ];
+$EastAsian = [ [\p{ea=F}\p{ea=W}\p{ea=H}] $EAST_ASIAN_UNCLASSIFIED $EAST_ASIAN_LOOSE_IN $EAST_ASIAN_POX $EAST_ASIAN_PRX $EAST_ASIAN_PHRASE $EAST_ASIAN_ID_AL ];
 
 $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 
@@ -117,7 +118,7 @@ $dictionary = [$SA $EAST_ASIAN_PHRASE];
 #                               XX  (Unknown, unassigned)
 #                         as $AL  (Alphabetic)
 #
-$ALPlus = [$AL $AI $SG $XX [$SA - [[:Mn:][:Mc:]]] [$EAST_ASIAN_PHRASE - $EAST_ASIAN_PHRASE_CM]];
+$ALPlus = [$AL $AI $SG $XX [$SA - [[:Mn:][:Mc:]]] [$EAST_ASIAN_PHRASE - $EAST_ASIAN_PHRASE_CM] $EAST_ASIAN_ID_AL ];
 
 
 ## -------------------------------------------------

@@ -5024,6 +5024,7 @@ void RBBITest::TestUnification() {
         {U'\U0010000C', U'\U000F0000'},
         {U'\U0010000D', U'\U000F0000'},
         {U'\U0010000E', U'\U000F0000'},
+        {U'\U0010000F', U'\U000F0000'},
     };
     tailorings[u"line_cj.txt"] = tailorings[u"line.txt"];
     // Should probably be mapped to wide characters, but that is a behaviour change.
@@ -5151,7 +5152,12 @@ void RBBITest::TestUnification() {
                     tailoring[cp] = U'\U0010000E';
                     break;
                 case U_LB_CONDITIONAL_JAPANESE_STARTER:
-                    tailoring[cp] = name == u"line_phrase_cj.txt" ? U'\U0010000C' : U'\U00100009';
+                    if (name != u"line_phrase_cj.txt") {
+                        printf("CJ U+%04X should have been remapped in normal or loose\n", cp,
+                               tailoring[cp]);
+                        std::terminate();
+                    }
+                    tailoring[cp] = U'\U0010000C';
                     break;
                 default:
                     printf("Unexpected lb value for U+%04X\n", cp);
@@ -5161,7 +5167,7 @@ void RBBITest::TestUnification() {
         }
         UnicodeSet fullwidthAlphanum("[\uff10-\uff19\uff21-\uff3a\uff41-\uff5a]", status);
         for (const char32_t cp : fullwidthAlphanum.codePoints()) {
-            tailoring[cp] = U'💯';
+            tailoring[cp] = U'\U0010000F';
         }
     }
     if (U_FAILURE(status)) {
@@ -5175,8 +5181,7 @@ void RBBITest::TestUnification() {
     }
     assertSuccess("UnicodeSet parsing in tailoring construction", status);
     constexpr int32_t codePointCount = 500;
-    const std::set<std::u16string_view> notYet{
-             u"line_loose_phrase_cj.txt",};
+    const std::set<std::u16string_view> notYet{};
     for (int n = 0;; ++n) {
         UnicodeString reference;
         for (int i = 0; i < codePointCount; ++i) {
