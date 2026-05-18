@@ -59,6 +59,7 @@
 #include "lstmbe.h"
 #include "rbbitst.h"
 #include "rbbidata.h"
+#include "rbbirb.h"
 #include "utypeinfo.h"  // for 'typeid' to work
 #include "uvector.h"
 #include "uvectr32.h"
@@ -5007,109 +5008,105 @@ void RBBITest::TestUnification() {
     printf("Partitions has %" PRIuPTR " parts\n", partition.size());
     RandomNumberGenerator rng(defaultSeed);
     UErrorCode status;
+    std::map<std::u16string_view, char32_t> privateUseHooks = {
+        {u"NON_EAST_ASIAN_UNCLASSIFIED", U'\U00100003'},
+        {u"EAST_ASIAN_UNCLASSIFIED", U'\U00100000'},
+        {u"NON_EAST_ASIAN_LOOSE_IN", U'\U00100001'},
+        {u"EAST_ASIAN_LOOSE_IN", U'\U00100002'},
+        {u"NON_EAST_ASIAN_POX", U'\U00100004'},
+        {u"EAST_ASIAN_POX", U'\U00100005'},
+        {u"NON_EAST_ASIAN_PRX", U'\U00100006'},
+        {u"EAST_ASIAN_PRX", U'\U00100007'},
+        {u"LOOSE_DASH", U'\U00100008'},
+        {u"EAST_ASIAN_PHRASE_ID", U'\U00100009'},
+        {u"EAST_ASIAN_PHRASE_AL", U'\U0010000A'},
+        {u"EAST_ASIAN_PHRASE_CM", U'\U0010000B'},
+        {u"EAST_ASIAN_PHRASE_NS", U'\U0010000C'},
+        {u"EAST_ASIAN_PHRASE_H2", U'\U0010000D'},
+        {u"EAST_ASIAN_PHRASE_H3", U'\U0010000E'},
+        {u"EAST_ASIAN_ID_AL", U'\U0010000F'}};
     std::map<std::u16string, std::map<char32_t, char32_t>> tailorings;
-    tailorings[u"line.txt"] = {
-        {U'\U00100000', U'\U000F0000'},
-        {U'\U00100001', U'\U000F0000'},
-        {U'\U00100002', U'\U000F0000'},
-        {U'\U00100003', U'\U000F0000'},
-        {U'\U00100004', U'\U000F0000'},
-        {U'\U00100005', U'\U000F0000'},
-        {U'\U00100006', U'\U000F0000'},
-        {U'\U00100007', U'\U000F0000'},
-        {U'\U00100008', U'\U000F0000'},
-        {U'\U00100009', U'\U000F0000'},
-        {U'\U0010000A', U'\U000F0000'},
-        {U'\U0010000B', U'\U000F0000'},
-        {U'\U0010000C', U'\U000F0000'},
-        {U'\U0010000D', U'\U000F0000'},
-        {U'\U0010000E', U'\U000F0000'},
-        {U'\U0010000F', U'\U000F0000'},
-    };
-    tailorings[u"line_cj.txt"] = tailorings[u"line.txt"];
-    // Should probably be mapped to wide characters, but that is a behaviour change.
-    tailorings[u"line_cj.txt"][U'\u201d'] = U'}';
-    tailorings[u"line_cj.txt"][U'\u201c'] = U'{';
-    tailorings[u"line_normal.txt"] = tailorings[u"line.txt"];
-    auto cj = UnicodeSet(u"[:lb=CJ:]", status);
-    for (UChar32 cp : cj.codePoints()) {
-        tailorings[u"line_normal.txt"][cp] = U'あ';
+    for (auto const &[name, cp] : privateUseHooks) {
+        tailorings[u"line.txt"][cp] = U'\U000F0000';
     }
-    tailorings[u"line_normal_cj.txt"] = tailorings[u"line_normal.txt"];
-    tailorings[u"line_normal_cj.txt"][U'\u201d'] = U'}';
-    tailorings[u"line_normal_cj.txt"][U'\u201c'] = U'{';
-    // A couple of things out of NS, $EAST_ASIAN_UNCLASSIFIED.
-    auto someNS = UnicodeSet(u"[〜 ゠]", status);
-    for (UChar32 cp : someNS.codePoints()) {
-        tailorings[u"line_normal_cj.txt"][cp] = U'\U00100000';
-    }
-    tailorings[u"line_loose.txt"] = tailorings[u"line.txt"];
-    for (UChar32 cp : cj.codePoints()) {
-        tailorings[u"line_loose.txt"][cp] = U'あ';
-    }
-    // Iteration marks out of NS, $EAST_ASIAN_UNCLASSIFIED.
-    auto iterationMarks = UnicodeSet(u"[\u3005 \u303B \u309D \u309E \u30FD \u30FE]", status);
-    for (UChar32 cp : iterationMarks.codePoints()) {
-        tailorings[u"line_loose.txt"][cp] = U'\U00100000';
-    }
-    // IN - $EastAsian to $NON_EAST_ASIAN_LOOSE_IN.
-    // Three of them ea=Ambiguous, should map to $EAST_ASIAN_UNCLASSIFIED.
-    // Two ea=Neutral; but even then I am not sure non-EastAsian is useful.
-    // But that would be a behaviour change, so not now.
-    auto neain = UnicodeSet(uR"([[:lb=IN:] - [\p{ea=F}\p{ea=W}\p{ea=H}]])", status);
-    for (UChar32 cp : neain.codePoints()) {
-        tailorings[u"line_loose.txt"][cp] = U'\U00100001';
-    }
-    // IN & $EastAsian to $EAST_ASIAN_LOOSE_IN.
-    auto eain = UnicodeSet(uR"([[:lb=IN:] & [\p{ea=F}\p{ea=W}\p{ea=H}]])", status);
-    for (UChar32 cp : eain.codePoints()) {
-        tailorings[u"line_loose.txt"][cp] = U'\U00100002';
-    }
-    tailorings[u"line_loose_cj.txt"] = tailorings[u"line_loose.txt"];
-    tailorings[u"line_loose_cj.txt"][U'\u201d'] = U'}';
-    tailorings[u"line_loose_cj.txt"][U'\u201c'] = U'{';
-    // Fullwidth exclamation and question marks out of EX, $EAST_ASIAN_UNCLASSIFIED.
-    tailorings[u"line_loose_cj.txt"][U'！'] = U'\U00100000';
-    tailorings[u"line_loose_cj.txt"][U'？'] = U'\U00100000';
-    // Pairs of {?,!} out of NS, $NON_EAST_ASIAN_UNCLASSIFIED.
-    // ea=Neutral, but is that really right in this context?
-    auto doubleMarks = UnicodeSet(u"[⁈ ⁇ ‼ ⁉]", status);
-    for (UChar32 cp : doubleMarks.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100003';
-    }
-    // More things out of NS, $EAST_ASIAN_UNCLASSIFIED.
-    auto moreNS = UnicodeSet(u"[〜 ゠ ・･ ； ：]", status);
-    for (UChar32 cp : moreNS.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100000';
-    }
-    // Some ea=Ambiguous PO to NON_EAST_ASIAN_POX.  ea=Ambiguous, so should likely be mapped
-    // to EAST_ASIAN_POX in this ja-zh context, rendering NON_EAST_ASIAN_POX redundant, but that is
-    // a behaviour change.
-    auto neaPOX = UnicodeSet(u"[‰ ′ ″ ‵ ° ℃ ℉]", status);
-    for (UChar32 cp : neaPOX.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100004';
-    }
-    // Some $EastAsian PO to EAST_ASIAN_POX.
-    auto eaPOX = UnicodeSet(u"[％﹪ ￠]", status);
-    for (UChar32 cp : eaPOX.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100005';
-    }
-    // Some ea=Ambiguous PR to NON_EAST_ASIAN_PRX.  ea=Ambiguous, so should likely be mapped
-    // to EAST_ASIAN_PRX in this ja-zh context, rendering NON_EAST_ASIAN_PRX redundant, but that is
-    // a behaviour change.
-    auto neaPRX = UnicodeSet(u"[± ¤ € №]", status);
-    for (UChar32 cp : neaPRX.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100006';
-    }
-    // Some $EastAsian PR to EAST_ASIAN_PRX.
-    auto eaPRX = UnicodeSet(u"[＄﹩ ￡ ￥ ￦]", status);
-    for (UChar32 cp : eaPRX.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100007';
-    }
-    // HH to $LOOSE_DASHES. Needs revisiting in 18.0, as EN DASH will move back out of HH.
-    auto hh = UnicodeSet(u"[:lb=HH:]", status);
-    for (UChar32 cp : hh.codePoints()) {
-        tailorings[u"line_loose_cj.txt"][cp] = U'\U00100008';
+    auto tailoringsDirectory = std::filesystem::path(pathToDataDirectory())
+                                   .parent_path()
+                                   .parent_path()
+                                   .parent_path()
+                                   .parent_path()
+                                   .parent_path() /
+                               "unicodetools";
+    for (const auto& [name, _] : nazgul) {
+        if (name == u"line.txt") {
+          continue;
+        }
+        if (name.find(u"phrase") != std::u16string::npos) {
+          continue;
+        }
+        for (auto const &[_, cp] : privateUseHooks) {
+            tailorings[name][cp] = U'\U000F0000';
+        }
+        std::vector<std::string> utf8Tailorings;
+        utf8Tailorings.emplace_back();
+        std::ifstream file(tailoringsDirectory / name);
+        if (!file.good()) {
+            printf("Could not open %s...\n", (tailoringsDirectory / name).string().c_str());
+            std::terminate();
+        }
+        for (;;) {
+            utf8Tailorings.back().push_back(0);
+            file.get(utf8Tailorings.back().back());
+            if (file.eof()) {
+                utf8Tailorings.back().pop_back();
+                break;
+            } else if (utf8Tailorings.back().back() == '\n') {
+              utf8Tailorings.emplace_back();
+            }
+        }
+        for (const auto& utf8Line : utf8Tailorings) {
+            const auto commentStart = utf8Line.find('#');
+            std::string significant = utf8Line;
+            if (commentStart != std::string::npos) {
+                significant = utf8Line.substr(0, commentStart);
+            }
+            const auto semicolon = significant.find(';');
+            if (semicolon == std::string::npos) {
+                if (!significant.empty()) {
+                    printf("Bad line %s\n", utf8Line.c_str());
+                    std::terminate();
+                }
+                continue;
+            }
+            UErrorCode status = U_ZERO_ERROR;
+            const auto from =
+                UnicodeSet(UnicodeString::fromUTF8(utf8Line.substr(0, semicolon)), status);
+            if (!U_SUCCESS(status) || from.hasStrings()) {
+                printf("Bad from set %s\n", utf8Line.c_str());
+                std::terminate();
+            }
+            auto to = UnicodeSet(UnicodeString::fromUTF8(utf8Line.substr(semicolon + 1)), status);
+            if (!U_SUCCESS(status) || to.size() != 1) {
+                printf("Bad to set %s\n", utf8Line.c_str());
+                std::terminate();
+            }
+            if (to.hasStrings()) {
+                auto it = privateUseHooks.find(*to.strings().begin());
+                if (it == privateUseHooks.end()) {
+                    std::string s;
+                    printf("Unknown string %s\n",
+                           UnicodeString(*to.strings().begin()).toUTF8String(s).c_str());
+                    std::terminate();
+                }
+                to.add(it->second);
+                to.removeAllStrings();
+            }
+            for (UChar32 cp : from.codePoints()) {
+                std::string s;
+                printf("tailorings[%s][U+%04X] = U+%04X\n",
+                       UnicodeString(name).toUTF8String(s).c_str(), cp, to.charAt(0));
+                tailorings[name][cp] = to.charAt(0);
+            }
+        }
     }
     tailorings[u"line_phrase_cj.txt"] = tailorings[u"line_cj.txt"];
     tailorings[u"line_normal_phrase_cj.txt"] = tailorings[u"line_normal_cj.txt"];
