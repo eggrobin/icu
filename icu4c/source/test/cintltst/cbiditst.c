@@ -4990,23 +4990,12 @@ doArabicShapingTestExpandCompositOOB(void) {
        dest[i+1] past the buffer when i == sourceLength-1. Before the fix,
        this caused a 2-byte heap-buffer-overflow read under ASan. After the
        fix, u_shapeArabic must succeed without out-of-bounds access. */
-    static const UChar source[] = {
-        0x0175, 0x2200, 0x4949, 0x4949, 0x4926, 0x4949, 0x0020, 0xFEF5,
-        0x0100, 0x0000, 0xFF00, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
-        0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
-        0xFFFF, 0xFFFF, 0x3801, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000,
-        0x0000, 0x01B3, 0x7F2F, 0xFC75, 0x4921, 0xF549, 0x00FE, 0x0001,
-        0x0100, 0x0030, 0x0000, 0x0000, 0x0000, 0xBD00, 0x2F01, 0x75FF,
-        0x217C, 0x4949, 0x4949, 0x4949, 0x2049, 0xF500, 0x00FE, 0x0001,
-        0x0000, 0x3801, 0x0000, 0xFF00, 0xFC75, 0x4921, 0x4949, 0x4949,
-        0x4949, 0x0020, 0xFEF5, 0x0100, 0x0000, 0x3801, 0x0040, 0x6C00,
-        0x0000, 0x0000, 0x1811, 0x2827, 0x0025, 0x00D0, 0x0600, 0xFF00,
-        0x00FF, 0x0038, 0xFF03, 0x75FD, 0xFFFE, 0x4949
-    };
-    UChar dest[256];
-    for (int i = 0; i < 256; ++i) {
-        dest[i] = 0xFEF5;
+    static UChar source[300];
+    for (int i = 0; i < UPRV_LENGTHOF(source); ++i) {
+        source[i] = 0x20;
     }
+    source[UPRV_LENGTHOF(source) - 1] = 0xFEF5;
+    UChar dest[UPRV_LENGTHOF(source)];
     UErrorCode errorCode = U_ZERO_ERROR;
     int32_t length;
 
@@ -5016,7 +5005,7 @@ doArabicShapingTestExpandCompositOOB(void) {
                            U_SHAPE_LENGTH_FIXED_SPACES_NEAR |
                            U_SHAPE_TEXT_DIRECTION_LOGICAL,
                            &errorCode);
-    for (int i = 0; i < 256; ++i) {
+    for (int i = 0; i < UPRV_LENGTHOF(dest); ++i) {
         printf("%03d : %04X\n", i, dest[i]);
     }
     if (U_FAILURE(errorCode)) {

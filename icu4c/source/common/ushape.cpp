@@ -28,6 +28,7 @@
 #include "ubidi_props.h"
 #include "uassert.h"
 
+#include <cinttypes>
 #include <limits>
 /*
  * This implementation is designed for 16-bit Unicode strings.
@@ -1061,6 +1062,8 @@ expandCompositCharAtNear(char16_t *dest, int32_t sourceLength, int32_t destSize,
                 } else {
                     printf("--- %d < %d\n", i, sourceLength - 1);
                 }
+                printf("%" PRIXPTR, dest);
+                    printf("??? isLamAlefChar(U+%04X)\n", dest[i+1]);
                 if(isLamAlefChar(dest[i+1])) {
                 if(dest[i] == SPACE_CHAR){
                     lamalefChar = dest[i+1];
@@ -1506,6 +1509,9 @@ u_shapeArabic(const char16_t *source, int32_t sourceLength,
 
     if((options&U_SHAPE_LETTERS_MASK)!=U_SHAPE_LETTERS_NOOP) {
         char16_t buffer[300];
+        for (int i = 0; i < 300; ++i) {
+            buffer[i] = 0xAAAA;
+        }
         char16_t *tempbuffer, *tempsource = nullptr;
         int32_t outputSize, spacesCountl=0, spacesCountr=0;
 
@@ -1576,9 +1582,11 @@ u_shapeArabic(const char16_t *source, int32_t sourceLength,
 
         /* Start of Arabic letter shaping part */
         if(outputSize<=UPRV_LENGTHOF(buffer)) {
+            printf("Using stack buffer of size 300 at %" PRIXPTR"\n", buffer);
             outputSize=UPRV_LENGTHOF(buffer);
             tempbuffer=buffer;
         } else {
+            printf("malloc %d UChars\n", outputSize);
             tempbuffer = (char16_t *)uprv_malloc(outputSize*U_SIZEOF_UCHAR);
 
             /*Test for nullptr*/
@@ -1588,14 +1596,23 @@ u_shapeArabic(const char16_t *source, int32_t sourceLength,
                 return 0;
             }
         }
+        printf("memcpy(%" PRIXPTR", source, %d)\n", tempbuffer, sourceLength);
         u_memcpy(tempbuffer, source, sourceLength);
+        printf("tempbuffer[%d]==%04X\n", sourceLength - 1, tempbuffer[sourceLength-1]);
+    for (int i = 0; i < 300; ++i) {
+        //printf("buffer[%03d] == %04X\n", i, buffer[i]);
+    }
         if (tempsource != nullptr){
             uprv_free(tempsource);
         }
 
         if(sourceLength<outputSize) {
+            printf("memset(%" PRIXPTR"+%d, 0, %d * sizeof(UChar))\n", tempbuffer, sourceLength, outputSize-sourceLength);
             uprv_memset(tempbuffer+sourceLength, 0, (outputSize-sourceLength)*U_SIZEOF_UCHAR);
         }
+    for (int i = 0; i < 300; ++i) {
+        //printf("buffer[%03d] == %04X\n", i, buffer[i]);
+    }
 
         if((options&U_SHAPE_TEXT_DIRECTION_MASK) == U_SHAPE_TEXT_DIRECTION_LOGICAL) {
             countSpaces(tempbuffer,sourceLength,options,&spacesCountl,&spacesCountr);
