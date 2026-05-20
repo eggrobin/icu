@@ -5136,29 +5136,19 @@ void RBBITest::TestUnification() {
                 case U_LB_IDEOGRAPHIC:
                     tailoring[cp] = U'\U00100009';
                     break;
-                case U_LB_ALPHABETIC:
-                    tailoring[cp] = U'\U0010000A';
-                    break;
                 case U_LB_COMBINING_MARK:
                     tailoring[cp] = U'\U0010000B';
                     break;
                 case U_LB_NONSTARTER:
                     tailoring[cp] = U'\U0010000C';
                     break;
+                case U_LB_ALPHABETIC:
                 case U_LB_H2:
-                    tailoring[cp] = U'\U0010000D';
-                    break;
                 case U_LB_H3:
-                    tailoring[cp] = U'\U0010000E';
-                    break;
                 case U_LB_JL:
-                    tailoring[cp] = U'\U00100010';
-                    break;
                 case U_LB_JV:
-                    tailoring[cp] = U'\U00100011';
-                    break;
                 case U_LB_JT:
-                    tailoring[cp] = U'\U00100012';
+                    tailoring[cp] = U'\U0010000A';
                     break;
                 case U_LB_CONDITIONAL_JAPANESE_STARTER:
                     if (name != u"line_phrase_cj.txt") {
