@@ -5024,7 +5024,10 @@ void RBBITest::TestUnification() {
         {u"EAST_ASIAN_PHRASE_NS", U'\U0010000C'},
         {u"EAST_ASIAN_PHRASE_H2", U'\U0010000D'},
         {u"EAST_ASIAN_PHRASE_H3", U'\U0010000E'},
-        {u"EAST_ASIAN_ID_AL", U'\U0010000F'}};
+        {u"EAST_ASIAN_ID_AL", U'\U0010000F'},
+        {u"EAST_ASIAN_PHRASE_JL", U'\U00100010'},
+        {u"EAST_ASIAN_PHRASE_JV", U'\U00100011'},
+        {u"EAST_ASIAN_PHRASE_JT", U'\U00100012'}};
     std::map<std::u16string, std::map<char32_t, char32_t>> tailorings;
     for (auto const &[name, cp] : privateUseHooks) {
         tailorings[u"line.txt"][cp] = U'\U000F0000';
@@ -5117,7 +5120,7 @@ void RBBITest::TestUnification() {
              u"line_loose_phrase_cj.txt",
          }) {
         auto &tailoring = tailorings[name];
-        UnicodeSet cjk("[ [ [:Han:] [:Katakana:] [:Hiragana:] [\uAC00-\uD7A3] \u30FC ] ]", status);
+        UnicodeSet cjk("[ [ [:Han:] [:Katakana:] [:Hiragana:] [\uAC00-\uD7A3] \u30FC ] [:lb=JL:] [:lb=JV:] [:lb=JT:] ]", status);
         for (const char32_t cp : cjk.codePoints()) {
             if (tailoring.find(cp) != tailoring.end()) {
                 if (tailoring[cp] == U'\U00100000') {
@@ -5147,6 +5150,15 @@ void RBBITest::TestUnification() {
                     break;
                 case U_LB_H3:
                     tailoring[cp] = U'\U0010000E';
+                    break;
+                case U_LB_JL:
+                    tailoring[cp] = U'\U00100010';
+                    break;
+                case U_LB_JV:
+                    tailoring[cp] = U'\U00100011';
+                    break;
+                case U_LB_JT:
+                    tailoring[cp] = U'\U00100012';
                     break;
                 case U_LB_CONDITIONAL_JAPANESE_STARTER:
                     if (name != u"line_phrase_cj.txt") {

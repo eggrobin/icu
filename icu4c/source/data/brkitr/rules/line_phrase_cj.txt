@@ -76,7 +76,7 @@ $XX = [:LineBreak =  Unknown:];
 $ZW = [:LineBreak =  ZWSpace:];
 $ZWJ = [:LineBreak = ZWJ:];
 
-$EastAsian = [\p{ea=F}\p{ea=W}\p{ea=H}];
+$EastAsian = [\p{ea=F}\p{ea=W}\p{ea=H} [:lb=JL:][:lb=JV:][:lb=JT:]];
 
 $ExtPictUnassigned = [\p{Extended_Pictographic} & \p{Cn}];
 
@@ -97,7 +97,7 @@ $Hiragana = [:Hiragana:];
 $HangulSyllable = [\uac00-\ud7a3];
 $ComplexContext = [:LineBreak = Complex_Context:];
 $KanaKanji      = [$Han $Hiragana $Katakana \u30fc];
-$dictionaryCJK  = [$KanaKanji $HangulSyllable];
+$dictionaryCJK  = [$KanaKanji $HangulSyllable [:lb=JL:][:lb=JV:][:lb=JT:]];
 $dictionary     = [$ComplexContext $dictionaryCJK];
 
 
