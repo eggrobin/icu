@@ -5289,6 +5289,9 @@ void RBBITest::TestLookaheadPolychromy() {
                                                .*;
                                            )",
                                            parseError, status);
+    assertEquals("lookaheadCherry chromatic number", 2,
+                 lookaheadCherry.fData->fForwardTable->fLookAheadResultsSize -
+                     ACCEPTING_UNCONDITIONAL - 1);
     for (auto const &[text, firstSegment] :
          std::vector<std::pair<UnicodeString, std::u16string_view>>{
              // If lookaheads 1 and 2 use the same slot, 2 stomps over 1 and we get xy instead of x
@@ -5309,7 +5312,7 @@ void RBBITest::TestLookaheadPolychromy() {
                   firstSegment + ", got " + actual);
     }
     // The state that accepts lookahead 1 is reachable from those that set lookaheads 2 and 3, and
-    // the set that accepts lookahead 2 is reachable from the one that sets lookahead 3: the graph
+    // the state that accepts lookahead 2 is reachable from the one that sets lookahead 3: the graph
     // of lookaheads is a triangle, its chromatic number is 3; the lookaheads all need different
     // slots.
     RuleBasedBreakIterator lookaheadTriangle(uR"(
@@ -5319,6 +5322,9 @@ void RBBITest::TestLookaheadPolychromy() {
                                                  .*;
                                              )",
                                              parseError, status);
+    assertEquals("lookaheadTriangle chromatic number", 3,
+                 lookaheadTriangle.fData->fForwardTable->fLookAheadResultsSize -
+                     ACCEPTING_UNCONDITIONAL - 1);
     for (auto const &[text, firstSegment] :
          std::vector<std::pair<UnicodeString, std::u16string_view>>{
              {u"xyz1", u"x"},
@@ -5342,6 +5348,9 @@ void RBBITest::TestLookaheadPolychromy() {
                                              .*;
                                          )",
                                          parseError, status);
+    assertEquals("lookaheadPath chromatic number", 2,
+                 lookaheadPath.fData->fForwardTable->fLookAheadResultsSize -
+                     ACCEPTING_UNCONDITIONAL - 1);
     for (auto const &[text, firstSegment] :
          std::vector<std::pair<UnicodeString, std::u16string_view>>{
              {u"xyz1", u"x"},
