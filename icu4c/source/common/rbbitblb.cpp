@@ -1510,6 +1510,26 @@ int32_t RBBITableBuilder::removeDuplicateStates() {
 }
 
 
+/*
+ * TODO(egg): WORDS.
+ */
+void RBBITableBuilder::minimizeLookaheads() {
+    // TODO(egg): Assuming 1-colourability for prototyping, this is not correct in general.
+    for (int i = 0; i < fDStates->size(); ++i) {
+        if (static_cast<RBBIStateDescriptor *>(fDStates->elementAt(i))->fAccepting >
+            ACCEPTING_UNCONDITIONAL) {
+            static_cast<RBBIStateDescriptor*>(fDStates->elementAt(i))->fAccepting = 2;
+        }
+        if (static_cast<RBBIStateDescriptor *>(fDStates->elementAt(i))->fLookAhead != 0) {
+            static_cast<RBBIStateDescriptor*>(fDStates->elementAt(i))->fLookAhead = 2;
+        }
+        if (fLASlotsInUse != ACCEPTING_UNCONDITIONAL) {
+          fLASlotsInUse = 2;
+        }
+    }
+}
+
+
 //-----------------------------------------------------------------------------
 //
 //   getTableSize()    Calculate the size of the runtime form of this
