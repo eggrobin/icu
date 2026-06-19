@@ -49,7 +49,7 @@ $ExtendNumLet       = [\p{Word_Break = ExtendNumLet}];
 $WSegSpace          = [\p{Word_Break = WSegSpace}];
 $Extended_Pict      = [\p{Extended_Pictographic}];
 
-#$Hiragana           = [:Hiragana:];
+$Hiragana           = [:Hiragana:];
 #$Ideographic        = [\p{Ideographic}];
 
 
@@ -58,12 +58,12 @@ $Extended_Pict      = [\p{Extended_Pictographic}];
 #   5.0 or later as the definition of Complex_Context was corrected to include all
 #   characters requiring dictionary break.
 
-#$Control        = [\p{Grapheme_Cluster_Break = Control}];
-#$HangulSyllable = [\uac00-\ud7a3];
-#$ComplexContext = [:LineBreak = Complex_Context:];
-#$KanaKanji      = [$Han $Hiragana $Katakana];
-#$dictionaryCJK  = [$KanaKanji $HangulSyllable];
-#$dictionary     = [$ComplexContext $dictionaryCJK];
+$Control        = [\p{Grapheme_Cluster_Break = Control}];
+$HangulSyllable = [\uac00-\ud7a3];
+$ComplexContext = [:LineBreak = Complex_Context:];
+$KanaKanji      = [$Han $Hiragana $Katakana];
+$dictionaryCJK  = [$KanaKanji $HangulSyllable];
+$dictionary     = [$ComplexContext $dictionaryCJK];
 
 # TODO: check if handling of katakana in dictionary makes rules incorrect/void
 
