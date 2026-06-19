@@ -5048,7 +5048,7 @@ void RBBITest::TestUnification() {
         }
         std::vector<std::string> utf8Tailorings;
         utf8Tailorings.emplace_back();
-        std::ifstream file(tailoringsDirectory / name);
+        std::ifstream file(tailoringsDirectory / (u"LineBreakTailoring" + name.substr(4)));
         if (!file.good()) {
             printf("Could not open %s...\n", (tailoringsDirectory / name).string().c_str());
             std::terminate();
