@@ -76,7 +76,7 @@ $ATermEx $CloseEx* $SpEx* $NotLettersEx* $Lower;
 ($STermEx | $ATermEx) $CloseEx* $SpEx* ($SContinueEx | $STermEx | $ATermEx);
 
 #Rule 9, 10, 11
-($STermEx | $ATermEx) $CloseEx* $SpEx* ($Sep | $CR | $LF)?;
+($STermEx | $ATermEx) $CloseEx* $SpEx* [$Sep $LF $CR {eof}]?;
 
 #Rule 998
 [^$STerm $ATerm $Close $Sp $Sep $LF $CR $Format $Extend] ($Extend | $Format | $Close | $Sp)* .;
