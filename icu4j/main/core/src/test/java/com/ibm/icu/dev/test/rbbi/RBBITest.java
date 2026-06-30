@@ -8,6 +8,11 @@
  */
 package com.ibm.icu.dev.test.rbbi;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.ibm.icu.dev.test.CoreTestFmwk;
 import com.ibm.icu.impl.RBBIDataWrapper;
 import com.ibm.icu.text.BreakIterator;
@@ -767,14 +772,18 @@ public class RBBITest extends CoreTestFmwk {
         }
         String text = builder.toString();
 
-        // Generate rule which will caused length+4 character classes and
-        // length+3 states
+        // Generate rules which result in numChar+4 character classes and numChar+3 states.
 
         builder = new StringBuilder(100 + 6 * numChar);
         builder.append("!!quoted_literals_only;");
         for (char c = 0x4e00; c < 0x4e00 + numChar; c++) {
+            // Each rule in this loop creates a new class [c] and a new state (reached by
+            // transitioning on [c] from the start state).
             builder.append("\'").append(c).append(c).append("';");
         }
+        // This one does not create new states, but creates a transition on a new class between the
+        // state reached by [\u4E00] and the accepting state.
+        builder.append('\'').append('\u4E00').append((char) (0x4e00 + numChar)).append("';");
         builder.append(".;");
         String rules = builder.toString();
 
@@ -1225,6 +1234,112 @@ public class RBBITest extends CoreTestFmwk {
             assertEquals("following" + idx, fns.expectedFollow(idx), bi.following(idx));
             idx = fns.randomStringIndex();
             assertEquals("preceding" + idx, fns.expectedPreceding(idx), bi.preceding(idx));
+        }
+    }
+
+    /** Tests some rule sets that require the lookaheads to occupy different slots. */
+    @Test
+    public void TestLookaheadPolychromy() {
+
+        // The first lookahead must occupy a different slot from the other two, because after
+        // encountering x y two different break positions can be returned depending on the third
+        // character: the graph of lookahead reachability is a cherry (🍒, the first one with an
+        // edge from the other two, the last two with no edge between each other).  Its chromatic
+        // number is 2.
+        final var lookaheadCherry =
+                new RuleBasedBreakIterator(
+                        ""
+                                + "[x] / [wy]   [z];"
+                                + "[x]   [y]  / [t];"
+                                + "[x]   [w]  / [u];"
+                                + ".*;");
+        for (final var textAndFirstSegment :
+                new String[][] {
+                    // If lookaheads 1 and 2 use the same slot, 2 stomps over 1 and we get xy
+                    // instead of x here.
+                    {"xyz", "x"},
+                    // If lookaheads 1 and 3 use the same slot, 3 stomps over 1 and we get xw
+                    // instead of x here.
+                    {"xwz", "x"},
+                    {"xyt", "xy"},
+                    {"xwt", "xwt"},
+                    {"xyu", "xyu"},
+                    {"xwu", "xw"},
+                }) {
+            String text = textAndFirstSegment[0];
+            String firstSegment = textAndFirstSegment[1];
+            lookaheadCherry.setText(text);
+            final var actual = text.substring(0, lookaheadCherry.next());
+            if (!actual.equals(firstSegment))
+                errln(
+                        "First segment of "
+                                + text
+                                + " with lookaheadCherry: expected "
+                                + firstSegment
+                                + ", got "
+                                + actual);
+        }
+        // The state that accepts lookahead 1 is reachable from those that set lookaheads 2 and 3,
+        // and the set that accepts lookahead 2 is reachable from the one that sets lookahead 3: the
+        // graph of lookaheads is a triangle, its chromatic number is 3; the lookaheads all need
+        // different slots.
+        final var lookaheadTriangle =
+                new RuleBasedBreakIterator(
+                        ""
+                                + "[x] / [y]   [z]    [1];"
+                                + "[x]   [y] / [z]    [2];"
+                                + "[x]   [y]   [z] /  [3];"
+                                + ".*;");
+        for (final var textAndFirstSegment :
+                new String[][] {
+                    {"xyz1", "x"},
+                    {"xyz2", "xy"},
+                    {"xyz3", "xyz"},
+                    {"xyzn", "xyzn"},
+                }) {
+            String text = textAndFirstSegment[0];
+            String firstSegment = textAndFirstSegment[1];
+            lookaheadTriangle.setText(text);
+            final var actual = text.substring(0, lookaheadTriangle.next());
+            if (!actual.equals(firstSegment))
+                errln(
+                        "First segment of "
+                                + text
+                                + " with lookaheadTriangle: expected "
+                                + firstSegment
+                                + ", got "
+                                + actual);
+        }
+        // Consecutive lookaheads must occupy different slots ; the graph of lookahead reachability
+        // is a path graph.  Its chromatic number is 2.
+        final var lookaheadPath =
+                new RuleBasedBreakIterator(
+                        ""
+                                + "[x]  / [y]   [z]   [1];"
+                                + "[x]?   [y] / [z]   [2];"
+                                + "[y]   [z] / [t]   [1];"
+                                + "[y]   [z]   [t] / [2];"
+                                + ".*;");
+        for (final var textAndFirstSegment :
+                new String[][] {
+                    {"xyz1", "x"},
+                    {"xyz2", "xy"},
+                    {"yz2", "y"},
+                    {"yzt1", "yz"},
+                    {"yzt2", "yzt"},
+                }) {
+            String text = textAndFirstSegment[0];
+            String firstSegment = textAndFirstSegment[1];
+            lookaheadPath.setText(text);
+            final var actual = text.substring(0, lookaheadPath.next());
+            if (!actual.equals(firstSegment))
+                errln(
+                        "First segment of "
+                                + text
+                                + " with lookaheadPath: expected "
+                                + firstSegment
+                                + ", got "
+                                + actual);
         }
     }
 }

@@ -346,7 +346,7 @@ ICU 2.4 and earlier versions were not prepared for multithreaded use on multi-CP
 
 #### Using ICU in a Multithreaded Environment on HP-UX
 
-When ICU is built with aCC on HP-UX, the [`-AA`](http://h21007.www2.hp.com/portal/site/dspp/menuitem.863c3e4cbcdc3f3515b49c108973a801?ciid=eb08b3f1eee02110b3f1eee02110275d6e10RCRD) compiler flag is used. It is required in order to use the latest `<iostream>` API in a thread safe manner. This compiler flag affects the version of the C++ library being used. Your applications will also need to be compiled with `-AA` in order to use ICU.
+When ICU is built with aCC on HP-UX, the `-AA` compiler flag is used. It is required in order to use the latest `<iostream>` API in a thread safe manner. This compiler flag affects the version of the C++ library being used. Your applications will also need to be compiled with `-AA` in order to use ICU.
 
 #### Using ICU in a Multithreaded Environment on Solaris
 
@@ -406,7 +406,8 @@ ICU 3.6 removes the requirement that ICU be completely built in the native opera
 
 #### Adapting Makefiles For a New Platform
 
-Try to follow the build steps from the [UNIX](#how-to-build-and-install-on-unix) build instructions. If the configure script fails, then you will need to modify some files. Here are the usual steps for porting to a new platform:
+Try to follow the build steps from the [UNIX](build.md#how-to-build-and-install-on-unix) build instructions.
+If the configure script fails, then you will need to modify some files. Here are the usual steps for porting to a new platform:
 
 1.  Create an mh file in `<ICU>/source/config/`. You can use mh-linux or a similar mh file as your base configuration.
 2.  Modify `<ICU>/source/aclocal.m4` to recognize your platform's mh file.

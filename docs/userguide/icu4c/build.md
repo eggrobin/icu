@@ -354,7 +354,7 @@ gmake install
 
 ### Configuring ICU
 
-Type `"./runConfigureICU --help"` for help on how to run it and a list of supported platforms. You may also want to type `"./configure --help"` to print the available configure options that you may want to give `runConfigureICU`. If you are not using the `runConfigureICU` script, or your platform is not supported by the script, you may need to set your `CC`, `CXX`, `CFLAGS` and `CXXFLAGS` environment variables, and type `"./configure"`. HP-UX users, please see this [note regarding HP-UX multithreaded build issues](#using-icu-in-a-multithreaded-environment-on-hp-ux) with newer compilers. Solaris users, please see this [note regarding Solaris multithreaded build issues](#linking-on-solaris).
+Type `"./runConfigureICU --help"` for help on how to run it and a list of supported platforms. You may also want to type `"./configure --help"` to print the available configure options that you may want to give `runConfigureICU`. If you are not using the `runConfigureICU` script, or your platform is not supported by the script, you may need to set your `CC`, `CXX`, `CFLAGS` and `CXXFLAGS` environment variables, and type `"./configure"`.
 
 ICU is built with strict compiler warnings enabled by default. If this causes excessive numbers of warnings on your platform, use the `--disable-strict` option to configure to reduce the warning level.
 
@@ -476,7 +476,7 @@ cd icu/as_is/os400
 qsh bldiculd.sh
 cd ../../..
 ```
-9.  Change into the 'source' directory, and configure ICU. (See [configuration note](#HowToConfigureICU) for details). Note that --with-data-packaging=archive and setting the --prefix are recommended, building in default (dll) mode is currently not supported.
+9.  Change into the 'source' directory, and configure ICU. (See [configuration note](#configuring-icu) for details). Note that --with-data-packaging=archive and setting the --prefix are recommended, building in default (dll) mode is currently not supported.
 ```
 cd icu/source
 ./runConfigureICU IBMi --prefix=_/path/to/somewhere_ --with-data-packaging=archive
@@ -500,7 +500,8 @@ Normally, in the course of a build, ICU needs to run the tools that it builds in
 
 To reduce confusion, we will here refer to the "A" and the "B" system. System "A" is the actual system we will be running on - the only requirements on it is are it is able to build ICU from the command line targeting itself (with `configure` or `runConfigureICU`), and secondly, that it also contain the correct toolchain for compiling and linking for the resultant platform, referred to as the "B" system.
 
-The autoconf docs use the term "build" for A, and "host" for B. More details at: [http://www.gnu.org/software/autoconf/manual/html_node/Specifying-Names.html](http://www.gnu.org/software/autoconf/manual/html_node/Specifying-Names.html#Specifying-Names)
+The autoconf docs use the term "build" for A, and "host" for B. More details at:
+<https://www.gnu.org/savannah-checkouts/gnu/autoconf/manual/autoconf-2.73/html_node/Specifying-Target-Triplets.html>
 
 Three initially-empty directories will be used in this example:
 
