@@ -337,7 +337,6 @@ RBBIDataHeader *RBBIRuleBuilder::build(UErrorCode &status) {
 
 void RBBIRuleBuilder::optimizeTables() {
     bool didSomething;
-    fForwardTable->minimizeLookaheads();
     do {
         didSomething = false;
 

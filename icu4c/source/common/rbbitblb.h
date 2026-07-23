@@ -79,11 +79,6 @@ public:
      */
     int32_t  removeDuplicateStates();
 
-    /**
-     * TODO(egg): WORDS.
-     */
-    void minimizeLookaheads();
-
     /** Build the safe reverse table from the already-constructed forward table. */
     void     buildSafeReverseTable(UErrorCode &status);
 
