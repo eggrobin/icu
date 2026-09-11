@@ -51,7 +51,7 @@ however, it is ignored in matching functions such as `span(string)`.
 
 UnicodeSet objects can be constructed from pattern strings using the notation defined in
 [Draft Unicode Technical Standard #61, Unicode Set Notation](https://www.unicode.org/reports/tr61/);
-see the [#Conformance] section for specifics.
+see the [Conformance](#Conformance) section for specifics.
 
 ### General
 At a high level, these are built up from lists of elements and Unicode property queries.
@@ -61,8 +61,14 @@ character ranges indicated by a '-' between two characters, as in
 `a-z`, and strings enclosed in curly brackets, as in `{abc}`.
 For example, `[a c d-f m {cat}]` is equivalent to `[a c d e f m {cat}]`;
 this set contains six letters, as well as the three-letter string "cat".
-Whitespace can be freely used for clarity: `[a c d-f m]` means the same
+By default, whitespace can be freely used for clarity: `[a c d-f m]` means the same
 as `[acd-fm]`.
+
+> Note: When explicit options are passed to UnicodeSet,
+> if IGNORE_SPACE is not set, whitespace is not ignored,
+> but instead is interpreted literally.
+> See the [Space-sensitive parsing](#space-sensitive) section
+> for specifics.
 
 Unicode [property queries](https://www.unicode.org/reports/tr61/#Property-Queries)
 refer to the set of characters that have a Unicode property value, such as `[:Letter:]`.
@@ -262,6 +268,21 @@ ICU interprets some expressions that are ill-formed according to the UnicodeSet 
   > | *string-valued*-[variable](#variable)
 
   The [variable](#variable) represents the same set of code point sequences as its expansion.
+
+#### Space-sensitive parsing {#space-sensitive}
+
+When sets are parsed with explicit options and the IGNORE_SPACE bit is not set,
+all characters in the
+[white-space](https://www.unicode.org/reports/tr61/#white-space)
+syntactic category of the UnicodeSet grammar are removed from that syntactic
+category, and are added to the
+[literal-element](https://www.unicode.org/reports/tr61/#literal-element)
+syntactic category.
+
+In that configuration, the UnicodeSet class is a conformant but inconsistent
+implementation of UnicodeSet notation: those expressions that contain a
+[literal-element](https://www.unicode.org/reports/tr61/#literal-element)
+with the Pattern_Syntax property are interpreted differently from the standard.
 
 ## Using a UnicodeSet
 
