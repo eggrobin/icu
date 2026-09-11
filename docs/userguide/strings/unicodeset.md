@@ -212,14 +212,16 @@ ICU interprets some expressions that are ill-formed according to the UnicodeSet 
   [Content](https://www.unicode.org/reports/tr61/#Content) production:
   > | [Æther](#Æther)  
   > | [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [Æther](#Æther)  
-  > | [UnescapedHyphenMinus](https://www.unicode.org/reports/tr61/#UnescapedHyphenMinus) [Æther](#Æther)  
-  > | [UnescapedHyphenMinus](https://www.unicode.org/reports/tr61/#UnescapedHyphenMinus) [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [Æther](#Æther)
+  > | [DollarElements](https://www.unicode.org/reports/tr61/#DollarElements) [UnescapedHyphenMinus](https://www.unicode.org/reports/tr61/#UnescapedHyphenMinus)  
+  > | [DollarElements](https://www.unicode.org/reports/tr61/#DollarElements) [Æther](https://www.unicode.org/reports/tr61/#Æther)  
+  > | [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [DollarElements](https://www.unicode.org/reports/tr61/#DollarElements) [UnescapedHyphenMinus](https://www.unicode.org/reports/tr61/#UnescapedHyphenMinus)  
+  > |  [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [DollarElements](https://www.unicode.org/reports/tr61/#DollarElements) [Æther](https://www.unicode.org/reports/tr61/#Æther)  
 
   The following alternative is added to the [ElementList](https://www.unicode.org/reports/tr61/#ElementList) production:
-  > | [DollarElements](#DollarElements) [Elements](https://www.unicode.org/reports/tr61/#Elements)
+  > | [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [DollarElements](#DollarElements) [Elements](https://www.unicode.org/reports/tr61/#Elements)
 
   The following alternative is added to the [Union](https://www.unicode.org/reports/tr61/#Union) production:
-  > | [DollarElements](#DollarElements) [UnicodeSet](https://www.unicode.org/reports/tr61/#UnicodeSet)
+  > | [ElementList](https://www.unicode.org/reports/tr61/#ElementList) [DollarElements](#DollarElements) [UnicodeSet](https://www.unicode.org/reports/tr61/#UnicodeSet)
 
   The following alternative is added to the [Range](https://www.unicode.org/reports/tr61/#Range) production:
   > | `$` - [RangeElement](https://www.unicode.org/reports/tr61/#RangeElement)
