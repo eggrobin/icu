@@ -130,6 +130,67 @@ a set. For example, the pattern `[[:Lu:]-A]` is illegal. To specify
 the set of uppercase letters except for 'A', enclose the 'A' in a set:
 `[[:Lu:]-[A]]`.
 
+### Recent changes
+
+In ICU 79, as part of the work on standardizing UnicodeSet notation in
+[Draft Unicode Technical Standard #61, Unicode Set Notation](https://www.unicode.org/reports/tr61/),
+a number of changes were made to UnicodeSet parsing in ICU.
+
+These changes add some new features, such as `\N{hex:name}` escapes.
+
+In some corner cases, they change the behaviour of the UnicodeSet class on
+pattern strings that were previously accepted:
+1. Spaces are no longer ignored in string literals.
+   This change comes with a migration period:
+   * In ICU 78, the sets `[{a b}]` and `[{ab}]` were equal, both contaning the
+     two-character string `ab`.
+   * In ICU 79 the set `[{a b}]` is ill-formed.
+   * In ICU 81, the pattern string `[{a b}]` will be accepted, representing a
+     set that contains the three-character string `a b`.
+2. `\N` escapes now represent characters, rather than sets containing a single
+   character:
+   * In ICU 78, `\N{LATIN SMALL LETTER A}` was a well-formed pattern string
+     representing the one-element set containing the character `a`.  
+     In ICU 79, it is ill-formed; `[\N{LATIN SMALL LETTER A}]` should be used.
+   * In ICU 78, `[[a-z]-\N{LATIN SMALL LETTER A}]` was a well-formed pattern
+     string representing the twenty-five element set `[b-z]`.  
+     In ICU 79, it is ill-formed; `[[a-z]-[\N{LATIN SMALL LETTER A}]]` should be used.
+   * In ICU 78, `[\N{LATIN SMALL LETTER A}-\N{LATIN SMALL LETTER Z}]` was a
+     well-formed pattern string representing the empty set
+     (equivalent to `[[a]-[z]]`).  
+     In ICU 79, it represents the twenty-six element set `[a-z]`.
+3. Variables are now grammatical.
+   * In ICU 78, the following transform rules were valid, equivalent to `[a-z] > A;`:
+     ```
+     $a = a;
+     $z = z;
+     $hyphen = '-';
+     [$a$hyphen$z] > A;
+     ```
+   * In ICU 79, this is ill-formed: variables must represent elements or sets;
+     they cannot expand to operators nor any other substring.
+     See the formal syntax of [variable](#variable) in the
+     [Extensions](#Extensions) section below.
+4. String ranges are disallowed.
+   * In ICU4J 78 (but not ICU4C), `[{aa}-{zz}]` was a well-formed pattern string
+     containing 26×26=676 two-character strings (`aa`, `ab`, `ac`, …, `az`, `ba`, `bb`, …, `zy`, `zz`).
+   * In ICU 79 (both C and J), it is disallowed.
+5. `\p` and `\P` are disallowed in string literals.
+   * In ICU 78, `[\p]` was ill-formed, but `[{\p}]` was well-formed, equal to `[p]`.
+   * In ICU 79, `[{\p}]` is ill-formed.
+6. `\p` and `\P` are disallowed in string literals.
+   * In ICU 78, `[\p]` was ill-formed, but `[{\p}]` was well-formed, equal to `[p]`.
+   * In ICU 79, `[{\p}]` is ill-formed.
+7. `\N` in string literal now starts a named-element.
+   * In ICU 78, `[\N]` was ill-formed, but `[{\N}]` was well-formed, equal to `[N]`.  
+     In ICU 79, `[{\N}]` is ill-formed.
+   * In ICU 78, `[{\N{LATIN SMALL LETTER A}\N{LATIN SMALL LETTER B}}]` was well-formed containing three elements: U+007D RIGHT CURLY BRACKET, U+0062 LATIN SMALL LETTER B, and the 19-character string `N{LATINSMALLLETTERA`.  
+     In ICU 79, `[{\N{LATIN SMALL LETTER A}\N{LATIN SMALL LETTER B}}]` contains a single element, the two-character string `ab`.
+8. Ranges cannot contain an unescaped HYPHEN-MINUS.
+   * In ICU 78, `[--a]` was a well-formed pattern string equal to `[\--a]`,
+     but `[\0--]` and `[b--a]` were ill-formed.
+   * In ICU 79, `[--a]` becomes ill-formed.
+
 ### Conformance
 
 The ICU UnicodeSet class is a conformant and consistent implementation of the
