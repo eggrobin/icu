@@ -95,7 +95,7 @@ the normal set operations (union, intersection, difference, and complement).
 | A - B | `[[:letter:] - [a-z]]` | `A.removeAll(B)` | To take the set-difference of two sets  A and B, use the '-' operator. |
 | [^A] | `[^a-z]` | `A.complement(B).removeAllStrings()` | To invert a set A, place a '^' immediately after the opening '['.  Note that this is a code point complement: `[^[𝐴]]` is equivalent to `[[\x{0000}-\x{10FFFF}]-[𝐴]]`, and contains no strings, regardless of whether 𝐴 contains strings. |
 
-> :point_right: **Note**:*ICU Regular Expression set expressions have a different (but similar) syntax,
+> :point_right: **Note**: *ICU Regular Expression set expressions have a different (but similar) syntax,
 and a different set of recognized backslash escapes. \[Sets\] in ICU Regular
 Expressions follow the conventions from Perl and Java regular expressions rather
 than the pattern syntax from ICU UnicodeSet.*
@@ -258,7 +258,7 @@ are supported: other values matching aliases for the Age property under UAX44-LM
 such as `V17_0`, `v170`, or `1 7.0`, are not supported.
 
 When querying numeric properties, rational values are not supported;
-see section [Valid Values and Resolved Sets](https://unicode-org.github.io/unicode-reports/tr61/tr61.html#Valid-Values-and-Resolved-Sets) of DUTS #61.
+see section [Valid Values and Resolved Sets](https://www.unicode.org/reports/tr61#Valid-Values-and-Resolved-Sets) of DUTS #61.
 Only binary64 floating-point values are supported.
 
 When matching character names in property queries for the `Name` property
