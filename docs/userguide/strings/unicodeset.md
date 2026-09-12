@@ -178,19 +178,16 @@ pattern strings that were previously accepted:
 5. `\p` and `\P` are disallowed in string literals.
    * In ICU 78, `[\p]` was ill-formed, but `[{\p}]` was well-formed, equal to `[p]`.
    * In ICU 79, `[{\p}]` is ill-formed.
-6. `\p` and `\P` are disallowed in string literals.
-   * In ICU 78, `[\p]` was ill-formed, but `[{\p}]` was well-formed, equal to `[p]`.
-   * In ICU 79, `[{\p}]` is ill-formed.
-7. `\N` in string literal now starts a named-element.
+6. `\N` in string literal now starts a named-element.
    * In ICU 78, `[\N]` was ill-formed, but `[{\N}]` was well-formed, equal to `[N]`.  
      In ICU 79, `[{\N}]` is ill-formed.
    * In ICU 78, `[{\N{LATIN SMALL LETTER A}\N{LATIN SMALL LETTER B}}]` was well-formed containing three elements: U+007D RIGHT CURLY BRACKET, U+0062 LATIN SMALL LETTER B, and the 19-character string `N{LATINSMALLLETTERA`.  
      In ICU 79, `[{\N{LATIN SMALL LETTER A}\N{LATIN SMALL LETTER B}}]` contains a single element, the two-character string `ab`.
-8. Ranges cannot contain an unescaped HYPHEN-MINUS.
+7. Ranges cannot contain an unescaped HYPHEN-MINUS.
    * In ICU 78, `[--a]` was a well-formed pattern string equal to `[\--a]`,
      but `[\0--]` and `[b--a]` were ill-formed.
    * In ICU 79, `[--a]` becomes ill-formed.
-9. Spaces are disallowed between `[:` and `^`, line breaks and tabs are disallowed inside `[::]`.
+8. Spaces are disallowed between `[:` and `^`, line breaks and tabs are disallowed inside `[::]`.
    * In ICU 78, `[: ^XID_Continue:]` was well-formed, equivalent to `[:^XID_Continue:]`.  
      In ICU 79, it is ill-formed. Use `[:^XID_Continue]`.
    * In ICU 78,
@@ -200,12 +197,12 @@ pattern strings that were previously accepted:
      ```
      was well-formed, equivalent to `[:XID_Continue:]`.  
      In ICU 79, it is ill-formed. Use `[:XID continue:]`.
-10. A trailing equals sign does not mean =Yes, nor does it mean =gc nor =sc.
-    * In ICU 78, `\p{XID_Continue=}` is well-formed, equivalent to `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.  
-      In ICU 79, it is ill-formed; use `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.
-    * In ICU 78, `\p{Uppercase_Letter=}` is well-formed, equivalent to `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.  
-      In ICU 79, it is ill-formed; use `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.
-11. Escapes for surrogate pairs in formats other than `\u` are deprecated.
+9. A trailing equals sign does not mean =Yes, nor does it mean =gc nor =sc.
+   * In ICU 78, `\p{XID_Continue=}` is well-formed, equivalent to `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.  
+     In ICU 79, it is ill-formed; use `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.
+   * In ICU 78, `\p{Uppercase_Letter=}` is well-formed, equivalent to `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.  
+     In ICU 79, it is ill-formed; use `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.
+10. Escapes for surrogate pairs in formats other than `\u` are deprecated.
     * In ICU4C 78, `[\x{DBFF}\x{DFFF}]` was a two-element set containing the surrogate
       code points U+DBFF and U+DFFF.  
       In ICU4C 79, it is ill-formed; use `[\x{DBFF} \x{DFFF}]`.
@@ -214,7 +211,7 @@ pattern strings that were previously accepted:
       In a future version of ICU, this may be made ill-formed in Java as well.
     * In both ICU4C and ICU4J, `[\uDBFF\uDFFF]` has long been equivalent to
       `[\x{10FFFF}]`. This remains the case.
-12. Implicit Directional Marks can no longer separate lexical elements.
+11. Implicit Directional Marks can no longer separate lexical elements.
     * In ICU 78, `[\xD‎F]` (that’s `[\xD`&lt;U+200E&gt;`F]`,
       with a LEFT-TO-RIGHT MARK between the D and the F), was the two-element set
       containing U+000D (CARRIAGE RETURN) and U+0046 F LATIN CAPITAL LETTER F.
