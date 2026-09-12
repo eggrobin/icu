@@ -190,6 +190,39 @@ pattern strings that were previously accepted:
    * In ICU 78, `[--a]` was a well-formed pattern string equal to `[\--a]`,
      but `[\0--]` and `[b--a]` were ill-formed.
    * In ICU 79, `[--a]` becomes ill-formed.
+9. Spaces are disallowed between `[:` and `^`, line breaks and tabs are disallowed inside `[::]`.
+   * In ICU 78, `[: ^XID_Continue:]` was well-formed, equivalent to `[:^XID_Continue:]`.  
+     In ICU 79, it is ill-formed. Use `[:^XID_Continue]`.
+   * In ICU 78,
+     ```
+     [:
+     XID continue:]
+     ```
+     was well-formed, equivalent to `[:XID_Continue:]`.  
+     In ICU 79, it is ill-formed. Use `[:XID continue:]`.
+10. A trailing equals sign does not mean =Yes, nor does it mean =gc nor =sc.
+    * In ICU 78, `\p{XID_Continue=}` is well-formed, equivalent to `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.  
+      In ICU 79, it is ill-formed; use `\p{XID_Continue=Yes}` or `\p{XID_Continue}`.
+    * In ICU 78, `\p{Uppercase_Letter=}` is well-formed, equivalent to `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.  
+      In ICU 79, it is ill-formed; use `\p{General_Category=Uppercase_Letter}` or `\p{Uppercase_Letter}`.
+11. Escapes for surrogate pairs in formats other than `\u` are deprecated.
+    * In ICU4C 78, `[\x{DBFF}\x{DFFF}]` was a two-element set containing the surrogate
+      code points U+DBFF and U+DFFF.  
+      In ICU4C 79, it is ill-formed; use `[\x{DBFF} \x{DFFF}]`.
+    * In ICU4J 78 and 79, `[\x{DBFF}\x{DFFF}]` is the one-element set containing the
+      supplementary code point U+10FFFF.
+      In a future version of ICU, this may be made ill-formed in Java as well.
+    * In both ICU4C and ICU4J, `[\uDBFF\uDFFF]` has long been equivalent to
+      `[\x{10FFFF}]`. This remains the case.
+12. Implicit Directional Marks can no longer separate lexical elements.
+    * In ICU 78, `[\xD‎F]` (that’s `[\xD`&lt;U+200E&gt;`F]`,
+      with a LEFT-TO-RIGHT MARK between the D and the F), was the two-element set
+      containing U+000D (CARRIAGE RETURN) and U+0046 F LATIN CAPITAL LETTER F.
+      In ICU 79, it is ill-formed. Use `[\xD F]`.  
+    * In ICU 78, `[\00‎7]` (that’s `[\00`&lt;U+200E&gt;`7]`,
+      with a LEFT-TO-RIGHT MARK between the 0 and the 7), was the two-element set
+      containing U+0000 (NULL) and U+0037 7 DIGIT SEVEN.  
+      In ICU 79, it is ill-formed. Use `[\x00 7]`.
 
 ### Conformance
 
