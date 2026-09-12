@@ -282,6 +282,7 @@ ICU interprets some expressions that are ill-formed according to the UnicodeSet 
 * A [string-literal](https://www.unicode.org/reports/tr61/#string-literal) is
   allowed to contain [escaped-element](https://www.unicode.org/reports/tr61/#escaped-element)s
   representing surrogate code points.
+* U+007D } RIGHT CURLY BRACKET is allowed as a [literal-element](https://www.unicode.org/reports/tr61/#literal-element), thus `[}]` is equal to `[\}]`.
 * A `$` at the end of [Content](https://www.unicode.org/reports/tr61/#Content) (that is, preceding a
   closing bracket `]`) represents the noncharacter code point U+FFFF.
   This is used to represent the start or end of text in transform rules, see Section
