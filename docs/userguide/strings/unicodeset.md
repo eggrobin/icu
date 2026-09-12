@@ -256,7 +256,7 @@ such as `V17_0`, `v170`, or `1 7.0`, are not supported.
 
 When querying numeric properties, rational values are not supported;
 see section [Valid Values and Resolved Sets](https://www.unicode.org/reports/tr61#Valid-Values-and-Resolved-Sets) of DUTS #61.
-Only binary64 floating-point values are supported.
+Only 64-bit floating-point values are supported (IEEE 754 binary64).
 
 When matching character names in property queries for the `Name` property
 and in [named-element](https://www.unicode.org/reports/tr61/#named-element)s,
